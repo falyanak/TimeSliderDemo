@@ -1,11 +1,17 @@
-import { initTimeSlider } from "./time-slider";
+import { TimeSliderComponent } from "./TimeSliderComponent";
 
-// Point d'entrée unique
+// On déclare les variables Razor une seule fois ici
+declare const START: string;
+declare const END: string;
+declare const DATA: any[];
+
 document.addEventListener("DOMContentLoaded", () => {
+    const sliderComponent = new TimeSliderComponent(START, END, DATA);
+    
     try {
-        initTimeSlider();
-        console.log("TimeSlider initialized ✅");
+        sliderComponent.init();
+        console.log("TimeSlider Component Ready ✅");
     } catch (err) {
-        console.error("Failed to initialize TimeSlider:", err);
+        console.error("Critical Failure:", err);
     }
 });

@@ -5,11 +5,12 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
-    "build:ts": "esbuild wwwroot/ts/main.ts --bundle --outfile=wwwroot/js/main.js --format=esm --minify",
-    "tsc:watch": "tsc --watch",
+  "build:ts": "esbuild wwwroot/ts/main.ts --bundle --outfile=wwwroot/js/main.js --format=esm --minify --sourcemap",
+    "watch:ts": "esbuild wwwroot/ts/main.ts --bundle --outfile=wwwroot/js/main.js --format=esm --sourcemap --watch",
+    "tsc:watch": "tsc --watch --preserveWatchOutput",
     "dotnet:watch": "dotnet watch run",
-    "dev": "concurrently \"npm run tsc:watch\" \"npm run dotnet:watch\"",
-    "copy:nouislider": "cp -R node_modules/nouislider/dist/* wwwroot/lib/nouislider/"
+    "copy:libs": "mkdir -p wwwroot/lib/nouislider wwwroot/lib/chartjs && cp -R node_modules/nouislider/dist/* wwwroot/lib/nouislider/ && cp -R node_modules/chart.js/dist/* wwwroot/lib/chartjs/",
+    "dev": "npm run copy:libs && concurrently -n \"ESBUILD,TSC,DOTNET\" -c \"cyan,magenta,blue\" \"npm run watch:ts\" \"npm run tsc:watch\" \"npm run dotnet:watch\""
   },
   "keywords": [],
   "author": "",

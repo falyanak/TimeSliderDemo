@@ -19,9 +19,12 @@ export class TimeSeriesChart {
                 }]
             },
             options: {
-                animation: false, // Performance
                 responsive: true,
-                maintainAspectRatio: false
+                maintainAspectRatio: false, // OBLIGATOIRE pour respecter la hauteur du parent
+                animation: false,           // Désactive les animations pour fluidifier le slider
+                elements: {
+                    line: { tension: 0 }    // Désactiver le lissage (Bézier) peut aussi aider les perfs
+                }
             }
         });
     }

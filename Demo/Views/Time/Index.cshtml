@@ -13,7 +13,7 @@
 <canvas id="chart" width="800" height="300"></canvas>
 
 <!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="~/lib/chartjs/chart.umd.js"></script>
 
 <!-- Données pour le slider -->
 <script>
@@ -30,5 +30,4 @@
 </script>
 
 <!-- Ton bundle TypeScript compilé -->
-<script type="module" src="~/js/main.js"></script>
-
+<script type="module" src="~/js/main.js" asp-append-version="true"></script>

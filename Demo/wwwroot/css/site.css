@@ -20,3 +20,10 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+/* Infrastructure / UI Styles */
+.chart-container {
+    position: relative;
+    height: 40vh; /* Ou 400px */
+    width: 100%;
+}
