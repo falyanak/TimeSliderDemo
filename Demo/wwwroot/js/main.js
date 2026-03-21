@@ -16428,69 +16428,53 @@ var init_TimeSliderComponent = __esm({
     init_nouislider();
     init_TimeSeriesChart();
     TimeSliderComponent = class {
-      constructor(start, end, data) {
+      constructor(start, end, data, range) {
         this.start = start;
         this.end = end;
         this.data = data;
+        this.range = range;
       }
       MS_PER_DAY = 864e5;
       chart = null;
       masterApi = null;
       detailApi = null;
-      // VERROU : Empêche Chart.js de boucler à l'infini
       lastMin = -1;
       lastMax = -1;
-      /**
-       * Le formateur interne : C'est ici que l'année a été ajoutée.
-       */
       dateFormatter = {
         to: (value) => {
-          const date = new Date(Math.round(value) * this.MS_PER_DAY);
-          return date.toLocaleDateString(void 0, {
-            day: "2-digit",
-            month: "short",
-            year: "numeric"
-            // <--- L'ANNÉE EST ICI MAINTENANT
-          });
+          const d = new Date(Math.round(value) * this.MS_PER_DAY);
+          return d.toLocaleDateString(void 0, { day: "2-digit", month: "short", year: "numeric" });
         },
-        // Nécessaire pour que noUiSlider comprenne comment lire la valeur si besoin
-        from: (value) => {
-          return new Date(value).getTime() / this.MS_PER_DAY;
-        }
+        from: (value) => new Date(value).getTime() / this.MS_PER_DAY
       };
       init() {
         const masterEl = document.getElementById("masterSlider");
         const detailEl = document.getElementById("detailSlider");
         const chartEl = document.getElementById("chart");
-        if (!masterEl || !detailEl || !chartEl) return;
-        if (masterEl.noUiSlider) return;
-        const container = chartEl.parentElement;
-        if (container) {
-          container.style.height = "450px";
-          container.style.position = "relative";
-        }
+        if (!masterEl || !detailEl || !chartEl || masterEl.noUiSlider) return;
         this.chart = new TimeSeriesChart(chartEl);
         const minDay = this.toDay(this.start);
         const maxDay = this.toDay(this.end);
-        const sliderConfig = {
+        const detailStart = Math.max(minDay, maxDay - this.range);
+        const config = {
           step: 1,
           connect: true,
           tooltips: [this.dateFormatter, this.dateFormatter],
-          // Applique le formateur aux 4 bulles
           range: { min: minDay, max: maxDay }
         };
-        nouislider_default.create(masterEl, { ...sliderConfig, start: [minDay, maxDay] });
-        nouislider_default.create(detailEl, { ...sliderConfig, start: [minDay, minDay + 30] });
+        nouislider_default.create(masterEl, { ...config, start: [minDay, maxDay] });
+        nouislider_default.create(detailEl, { ...config, start: [detailStart, maxDay] });
         this.masterApi = masterEl.noUiSlider;
         this.detailApi = detailEl.noUiSlider;
-        this.masterApi.on("slide", (values) => {
-          const [min, max] = values.map(Number);
-          this.detailApi?.updateOptions({ range: { min, max } }, false);
+        this.masterApi.on("slide", (vals) => {
+          const mMax = Math.round(Number(vals[1]));
+          const mMin = Math.round(Number(vals[0]));
+          this.detailApi?.updateOptions({ range: { min: mMin, max: mMax } }, false);
+          this.detailApi?.set([Math.max(mMin, mMax - this.range), mMax]);
         });
-        this.detailApi.on("update", (values) => {
-          const [min, max] = values.map(Number);
-          const sMin = Math.round(min);
-          const sMax = Math.round(max);
+        this.detailApi.on("update", (vals) => {
+          const sMin = Math.round(Number(vals[0]));
+          const sMax = Math.round(Number(vals[1]));
           if (sMin === this.lastMin && sMax === this.lastMax) return;
           this.lastMin = sMin;
           this.lastMax = sMax;
@@ -16498,16 +16482,18 @@ var init_TimeSliderComponent = __esm({
         });
       }
       syncData(min, max) {
-        const filtered = this.data.filter((d) => {
-          const day = this.toDay(d.t);
-          return day >= min && day <= max;
-        });
-        this.chart?.update(
-          filtered.map((d) => d.t),
-          filtered.map((d) => d.v)
-        );
+        const startDate = new Date(min * this.MS_PER_DAY).toISOString().split("T")[0];
+        const endDate = new Date(max * this.MS_PER_DAY).toISOString().split("T")[0];
+        const inputS = document.getElementById("filter-start");
+        const inputE = document.getElementById("filter-end");
+        if (inputS) inputS.value = startDate;
+        if (inputE) inputE.value = endDate;
+        const outputEl = document.getElementById("output");
+        if (outputEl) outputEl.innerHTML = `S\xE9lection : <b>${startDate}</b> au <b>${endDate}</b>`;
+        const filtered = this.data.filter((p) => p.t >= startDate && p.t <= endDate);
+        this.chart?.update(filtered.map((d) => d.t), filtered.map((d) => d.v));
       }
-      toDay = (date) => Math.floor(new Date(date).getTime() / this.MS_PER_DAY);
+      toDay = (d) => Math.floor(new Date(d).getTime() / this.MS_PER_DAY);
     };
   }
 });
@@ -16517,12 +16503,20 @@ var require_main = __commonJS({
   "wwwroot/ts/main.ts"() {
     init_TimeSliderComponent();
     document.addEventListener("DOMContentLoaded", () => {
-      const sliderComponent = new TimeSliderComponent(START, END, DATA);
-      try {
-        sliderComponent.init();
-        console.log("TimeSlider Component Ready \u2705");
-      } catch (err) {
-        console.error("Critical Failure:", err);
+      const appContainer = document.getElementById("time-slider-app");
+      const btnFilter = document.getElementById("btn-apply-filter");
+      if (appContainer) {
+        const start = appContainer.dataset.start || "";
+        const end = appContainer.dataset.end || "";
+        const range = parseInt(appContainer.dataset.range || "60");
+        const data = JSON.parse(appContainer.dataset.points || "[]");
+        const sliderApp = new TimeSliderComponent(start, end, data, range);
+        sliderApp.init();
+        btnFilter?.addEventListener("click", () => {
+          const s = document.getElementById("filter-start").value;
+          const e = document.getElementById("filter-end").value;
+          window.location.href = `/Time/GetFilter?startDate=${s}&endDate=${e}`;
+        });
       }
     });
   }

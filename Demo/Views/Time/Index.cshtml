@@ -1,35 +1,39 @@
-@{
-    ViewData["Title"] = "Time Slider Demo";
-}
-<!-- CSS noUiSlider -->
-<link href="~/lib/nouislider/nouislider.css" rel="stylesheet" />
+@model TimeSliderViewModel
 
+
+@{
+    ViewData["Title"] = "Analyse Temporelle";
+}
+
+<link href="~/lib/nouislider/nouislider.css" rel="stylesheet" />
 <link href="~/css/slider.css" rel="stylesheet" />
 
-<h2>@ViewData["Title"]</h2>
+<div id="time-slider-app" 
+     data-start="@Model.StartDate" 
+     data-end="@Model.EndDate" 
+     data-range="@Model.RangeDays"
+     data-points='@Model.JsonData'>
 
-<!-- Sliders -->
-<div id="masterSlider" style="margin: 20px 0;"></div>
-<div id="detailSlider" style="margin: 20px 0;"></div>
-<div id="output" style="margin: 10px 0; font-weight: bold;"></div>
-<canvas id="chart" width="800" height="300"></canvas>
+    <h2>@ViewData["Title"]</h2>
 
-<!-- Chart.js -->
-<script src="~/lib/chartjs/chart.umd.js"></script>
+    <input type="hidden" id="filter-start" name="startDate" value="@Model.StartDate" />
+    <input type="hidden" id="filter-end" name="endDate" value="@Model.EndDate" />
 
-<!-- Données pour le slider -->
-<script>
-    const START = "2020-01-01";
-    const END = "2025-12-31";
-    const DATA = [];
+    <div class="chart-container">
+        <canvas id="chart"></canvas>
+    </div>
 
-    let d = new Date(START);
-    const end = new Date(END);
-    while(d <= end){
-        DATA.push({ t: d.toISOString().substring(0,10), v: Math.floor(Math.random()*100) });
-        d.setUTCDate(d.getUTCDate()+1);
-    }
-</script>
+    <div id="masterSlider"></div>
+    <div id="detailSlider"></div>
+    
+    <div id="output" class="mt-3 text-muted"></div>
 
-<!-- Ton bundle TypeScript compilé -->
-<script type="module" src="~/js/main.js" asp-append-version="true"></script>
+    <button type="button" id="btn-apply-filter" class="btn btn-primary mt-3">
+        Filtrer les données
+    </button>
+</div>
+
+@section Scripts {
+    <script src="~/lib/chartjs/chart.umd.js"></script>
+    <script type="module" src="~/js/main.js" asp-append-version="true"></script>
+}

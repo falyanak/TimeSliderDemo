@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+using Demo.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Demo.Controllers;
@@ -7,17 +9,51 @@ public class TimeController : Controller
     // Page principale (vue Razor)
     public IActionResult Index()
     {
-        var start = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        var end = DateTime.UtcNow.Date;
 
-        var data = GenerateData(start, end);
+        var now = DateTime.Now;
+        int nbYears = -5;
 
-        ViewBag.Start = start.ToString("O"); // ISO UTC
-        ViewBag.End = end.ToString("O");
-        ViewBag.Data = System.Text.Json.JsonSerializer.Serialize(data);
+        var startDate = now.AddYears(nbYears);
+        var endDate = now; // 2026-03-21
 
-        return View();
+        var points = GetDummyData(startDate, endDate);
+
+        var viewModel = new TimeSliderViewModel
+        {
+            StartDate = startDate.ToString("yyyy-MM-dd"),
+            EndDate = endDate.ToString("yyyy-MM-dd"),
+            RangeDays = 60,
+            Data = points
+        };
+
+        return View(viewModel);
     }
+
+    public List<TimePoint> GetDummyData(DateTime start, DateTime end)
+    {
+        var data = new List<TimePoint>();
+        var random = new Random();
+        double lastValue = 50;
+
+        for (var date = start; date <= end; date = date.AddDays(1))
+        {
+            // Simulation d'une variation douce (Marche aléatoire)
+            lastValue += (random.NextDouble() - 0.5) * 10;
+
+            data.Add(new TimePoint
+            {
+                t = date.ToString("yyyy-MM-dd"),
+                v = Math.Round(lastValue, 2)
+            });
+        }
+        return data;
+    }
+
+    public IActionResult GetFilter(DateTime startDate, DateTime endDate)
+    {
+        return Content($"StartDate = {startDate} et endDate = {endDate}");
+    }
+
 
     // API JSON (utile pour évolution clean archi)
     [HttpGet]

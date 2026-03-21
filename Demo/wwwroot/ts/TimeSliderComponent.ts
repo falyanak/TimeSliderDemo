@@ -8,33 +8,22 @@ export class TimeSliderComponent {
     private chart: TimeSeriesChart | null = null;
     private masterApi: API | null = null;
     private detailApi: API | null = null;
-    
-    // VERROU : Empêche Chart.js de boucler à l'infini
     private lastMin: number = -1;
     private lastMax: number = -1;
 
     constructor(
         private readonly start: string,
         private readonly end: string,
-        private readonly data: TimePoint[]
+        private readonly data: TimePoint[],
+        private readonly range: number
     ) {}
 
-    /**
-     * Le formateur interne : C'est ici que l'année a été ajoutée.
-     */
     private readonly dateFormatter = {
         to: (value: number): string => {
-            const date = new Date(Math.round(value) * this.MS_PER_DAY);
-            return date.toLocaleDateString(undefined, { 
-                day: '2-digit', 
-                month: 'short',
-                year: 'numeric' // <--- L'ANNÉE EST ICI MAINTENANT
-            });
+            const d = new Date(Math.round(value) * this.MS_PER_DAY);
+            return d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
         },
-        // Nécessaire pour que noUiSlider comprenne comment lire la valeur si besoin
-        from: (value: string): number => {
-            return new Date(value).getTime() / this.MS_PER_DAY;
-        }
+        from: (value: string): number => new Date(value).getTime() / this.MS_PER_DAY
     };
 
     public init(): void {
@@ -42,67 +31,57 @@ export class TimeSliderComponent {
         const detailEl = document.getElementById("detailSlider");
         const chartEl = document.getElementById("chart") as HTMLCanvasElement;
 
-        if (!masterEl || !detailEl || !chartEl) return;
-        if ((masterEl as any).noUiSlider) return; 
-
-        // FIX HAUTEUR : On verrouille le parent du graphique
-        const container = chartEl.parentElement;
-        if (container) {
-            container.style.height = "450px"; 
-            container.style.position = "relative";
-        }
+        if (!masterEl || !detailEl || !chartEl || (masterEl as any).noUiSlider) return;
 
         this.chart = new TimeSeriesChart(chartEl);
-
         const minDay = this.toDay(this.start);
         const maxDay = this.toDay(this.end);
+        const detailStart = Math.max(minDay, maxDay - this.range);
 
-        // Configuration avec les 2 tooltips activés
-        const sliderConfig = {
-            step: 1,
-            connect: true,
-            tooltips: [this.dateFormatter, this.dateFormatter], // Applique le formateur aux 4 bulles
+        const config = {
+            step: 1, connect: true,
+            tooltips: [this.dateFormatter, this.dateFormatter],
             range: { min: minDay, max: maxDay }
         };
 
-        noUiSlider.create(masterEl, { ...sliderConfig, start: [minDay, maxDay] });
-        noUiSlider.create(detailEl, { ...sliderConfig, start: [minDay, minDay + 30] });
+        noUiSlider.create(masterEl, { ...config, start: [minDay, maxDay] });
+        noUiSlider.create(detailEl, { ...config, start: [detailStart, maxDay] });
 
         this.masterApi = (masterEl as any).noUiSlider as API;
         this.detailApi = (detailEl as any).noUiSlider as API;
 
-        // Liaison fluide Master -> Detail
-        this.masterApi.on("slide", (values) => {
-            const [min, max] = values.map(Number);
-            this.detailApi?.updateOptions({ range: { min, max } }, false);
+        this.masterApi.on("slide", (vals) => {
+            const mMax = Math.round(Number(vals[1]));
+            const mMin = Math.round(Number(vals[0]));
+            this.detailApi?.updateOptions({ range: { min: mMin, max: mMax } }, false);
+            this.detailApi?.set([Math.max(mMin, mMax - this.range), mMax]);
         });
 
-        // Liaison Detail -> Chart avec VERROU
-        this.detailApi.on("update", (values) => {
-            const [min, max] = values.map(Number);
-            const sMin = Math.round(min);
-            const sMax = Math.round(max);
-
+        this.detailApi.on("update", (vals) => {
+            const sMin = Math.round(Number(vals[0]));
+            const sMax = Math.round(Number(vals[1]));
             if (sMin === this.lastMin && sMax === this.lastMax) return;
-            
-            this.lastMin = sMin;
-            this.lastMax = sMax;
-
+            this.lastMin = sMin; this.lastMax = sMax;
             this.syncData(sMin, sMax);
         });
     }
 
     private syncData(min: number, max: number): void {
-        const filtered = this.data.filter(d => {
-            const day = this.toDay(d.t);
-            return day >= min && day <= max;
-        });
+        const startDate = new Date(min * this.MS_PER_DAY).toISOString().split('T')[0];
+        const endDate = new Date(max * this.MS_PER_DAY).toISOString().split('T')[0];
 
-        this.chart?.update(
-            filtered.map(d => d.t),
-            filtered.map(d => d.v)
-        );
+        // Mémorisation dans les champs hidden
+        const inputS = document.getElementById("filter-start") as HTMLInputElement;
+        const inputE = document.getElementById("filter-end") as HTMLInputElement;
+        if (inputS) inputS.value = startDate;
+        if (inputE) inputE.value = endDate;
+
+        const outputEl = document.getElementById("output");
+        if (outputEl) outputEl.innerHTML = `Sélection : <b>${startDate}</b> au <b>${endDate}</b>`;
+
+        const filtered = this.data.filter(p => p.t >= startDate && p.t <= endDate);
+        this.chart?.update(filtered.map(d => d.t), filtered.map(d => d.v));
     }
 
-    private toDay = (date: string | Date): number => Math.floor(new Date(date).getTime() / this.MS_PER_DAY);
+    private toDay = (d: string): number => Math.floor(new Date(d).getTime() / this.MS_PER_DAY);
 }
