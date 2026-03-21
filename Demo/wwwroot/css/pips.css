@@ -1,0 +1,15 @@
+.pip-container {
+    position: relative;
+    height: 30px;
+}
+
+.custom-pip {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+}
+
+.custom-pip-label {
+    font-size: 10px;
+    white-space: nowrap;
+}

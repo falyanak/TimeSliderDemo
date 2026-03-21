@@ -1,0 +1,25 @@
+{
+  "name": "demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+     "build:ts": "esbuild wwwroot/ts/main.ts --bundle --outfile=wwwroot/js/main.js --format=esm --minify",
+    "tsc:watch": "tsc --watch",
+    "dotnet:watch": "dotnet watch run",
+    "dev": "concurrently \"npm run tsc:watch\" \"npm run dotnet:watch\"",
+    "copy:nouislider": "cp -R node_modules/nouislider/dist/* wwwroot/lib/nouislider/"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "chart.js": "^4.5.1",
+    "nouislider": "^15.8.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "esbuild": "^0.27.4"
+  }
+}
