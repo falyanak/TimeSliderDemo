@@ -16,7 +16,7 @@ export class TimeSliderComponent {
         private readonly end: string,
         private readonly data: TimePoint[],
         private readonly range: number
-    ) {}
+    ) { }
 
     private readonly dateFormatter = {
         to: (value: number): string => {
@@ -27,6 +27,9 @@ export class TimeSliderComponent {
     };
 
     public init(): void {
+
+        const loader = document.getElementById("app-loader");
+
         const masterEl = document.getElementById("masterSlider");
         const detailEl = document.getElementById("detailSlider");
         const chartEl = document.getElementById("chart") as HTMLCanvasElement;
@@ -64,6 +67,18 @@ export class TimeSliderComponent {
             this.lastMin = sMin; this.lastMax = sMax;
             this.syncData(sMin, sMax);
         });
+
+        // On simule ou on attend la fin du rendu initial
+        if (this.chart) {
+            // Un petit délai de 300ms rend la transition plus fluide pour l'utilisateur
+            setTimeout(() => {
+                loader?.classList.add("spinner-hidden");
+            }, 300);
+        }
+        if (loader) {
+            loader.classList.add("spinner-hidden");
+        }
+
     }
 
     private syncData(min: number, max: number): void {

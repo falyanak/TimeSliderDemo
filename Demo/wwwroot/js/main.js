@@ -16448,6 +16448,7 @@ var init_TimeSliderComponent = __esm({
         from: (value) => new Date(value).getTime() / this.MS_PER_DAY
       };
       init() {
+        const loader = document.getElementById("app-loader");
         const masterEl = document.getElementById("masterSlider");
         const detailEl = document.getElementById("detailSlider");
         const chartEl = document.getElementById("chart");
@@ -16480,6 +16481,14 @@ var init_TimeSliderComponent = __esm({
           this.lastMax = sMax;
           this.syncData(sMin, sMax);
         });
+        if (this.chart) {
+          setTimeout(() => {
+            loader?.classList.add("spinner-hidden");
+          }, 300);
+        }
+        if (loader) {
+          loader.classList.add("spinner-hidden");
+        }
       }
       syncData(min, max) {
         const startDate = new Date(min * this.MS_PER_DAY).toISOString().split("T")[0];

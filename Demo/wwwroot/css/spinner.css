@@ -1,0 +1,36 @@
+/* Conteneur pour centrer le spinner sur le graphique */
+.spinner-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    transition: opacity 0.4s ease-out, visibility 0.4s;
+}
+
+/* Le Spinner (Cercle animé) */
+.custom-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #e5e7eb;
+    border-top: 5px solid #2563eb; /* Bleu primaire */
+    border-radius: 50%;
+    animation: spin-animation 1s linear infinite;
+}
+
+/* Animation de rotation */
+@keyframes spin-animation {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Classe de sortie pour le TypeScript */
+.spinner-hidden {
+    opacity: 0;
+    visibility: hidden;
+}
