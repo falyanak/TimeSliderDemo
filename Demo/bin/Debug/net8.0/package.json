@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
-     "build:ts": "esbuild wwwroot/ts/main.ts --bundle --outfile=wwwroot/js/main.js --format=esm --minify",
+    "build:ts": "esbuild wwwroot/ts/main.ts --bundle --outfile=wwwroot/js/main.js --format=esm --minify",
     "tsc:watch": "tsc --watch",
     "dotnet:watch": "dotnet watch run",
     "dev": "concurrently \"npm run tsc:watch\" \"npm run dotnet:watch\"",

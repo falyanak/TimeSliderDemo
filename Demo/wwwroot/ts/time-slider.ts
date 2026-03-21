@@ -1,171 +1,109 @@
 import noUiSlider, { API } from "nouislider";
-// import "nouislider/dist/nouislider.css"; <-- CSS à inclure via Razor
-
-type SliderElement = HTMLElement & { noUiSlider: API };
+import Chart from "chart.js/auto";
 
 interface TimePoint {
-    t: string; // date ISO
-    v: number; // valeur
+    t: string;
+    v: number;
 }
 
-const DAY = 86400000; // ms dans un jour
-
-// UTILS
-function toDay(date: string | Date): number {
-    return Math.floor(new Date(date).getTime() / DAY);
-}
-
-function fromDay(day: number): Date {
-    return new Date(day * DAY);
-}
-
-function snapToMonth(day: number): number {
-    const d = fromDay(day);
-    const first = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1) / DAY;
-    const next = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1) / DAY;
-    return Math.abs(day - first) < Math.abs(day - next) ? first : next;
-}
-
-function formatDay(day: number, span: number): string {
-    const d = fromDay(day);
-    if (span > 730) { // > 2 ans
-        const m = d.getUTCMonth();
-        if (m === 0) return `Janv ${d.getUTCFullYear()}`;
-        if (m === 5) return `Juin ${d.getUTCFullYear()}`;
-        return "";
-    }
-    return d.toISOString().substring(0, 10);
-}
-
-// DOM helpers
-function getSlider(id: string): SliderElement {
-    const el = document.getElementById(id);
-    if (!el) throw new Error(`Element ${id} not found`);
-    return el as SliderElement;
-}
-
-// --- Entrée depuis Razor ---
+// Variables globales (injectées par Razor)
 declare const START: string;
 declare const END: string;
 declare const DATA: TimePoint[];
 
-// INITIALISATION
-export function initTimeSlider() {
-    const master = getSlider("masterSlider");
-    const detail = getSlider("detailSlider");
-    const output = document.getElementById("output")!;
+const MS_PER_DAY = 86400000;
+const toDay = (date: string | Date): number => Math.floor(new Date(date).getTime() / MS_PER_DAY);
+const fromDay = (day: number): Date => new Date(day * MS_PER_DAY);
+
+// On utilise un nom unique pour éviter les conflits de portée
+let globalChartInstance: Chart | null = null;
+
+export function initTimeSlider(): void {
+    const chartEl = document.getElementById("chart") as HTMLCanvasElement;
+    const masterEl = document.getElementById("masterSlider") as HTMLElement;
+    const detailEl = document.getElementById("detailSlider") as HTMLElement;
+    const outputEl = document.getElementById("output")!;
+
+    if (!chartEl || !masterEl || !detailEl) return;
+
+    // 1. SÉCURITÉ : Éviter l'erreur "Slider was already initialized"
+    if ((masterEl as any).noUiSlider) {
+        console.warn("Sliders déjà initialisés, arrêt.");
+        return;
+    }
+
+    // 2. INITIALISER LE GRAPHIQUE EN PREMIER 
+    // Obligatoire pour que syncChart ne trouve pas 'null' au premier rendu du slider
+    globalChartInstance = new Chart(chartEl, {
+        type: "line",
+        data: {
+            labels: [] as string[],
+            datasets: [{
+                label: "Valeur",
+                data: [] as number[],
+                borderColor: "#3b82f6",
+                tension: 0.1,
+                pointRadius: 0,
+                fill: true,
+                backgroundColor: "rgba(59, 130, 246, 0.1)"
+            }]
+        },
+        options: {
+            animation: false, // Performance : indispensable pour le slider
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // 3. FONCTION DE MISE À JOUR
+    const syncChart = (min: number, max: number) => {
+        if (!globalChartInstance) return;
+        
+        const filtered = DATA.filter(d => {
+            const dDay = toDay(d.t);
+            return dDay >= min && dDay <= max;
+        });
+
+        globalChartInstance.data.labels = filtered.map(d => d.t);
+        globalChartInstance.data.datasets[0].data = filtered.map(d => d.v);
+        globalChartInstance.update('none'); 
+    };
 
     const minDay = toDay(START);
     const maxDay = toDay(END);
 
-    // --- Create sliders ---
-    noUiSlider.create(master, {
+    // 4. CRÉER LES SLIDERS (déclenchent immédiatement un event 'update')
+    noUiSlider.create(masterEl, {
         start: [minDay, maxDay],
         connect: true,
-        step: 1,
         range: { min: minDay, max: maxDay }
     });
 
-    noUiSlider.create(detail, {
+    noUiSlider.create(detailEl, {
         start: [minDay, minDay + 30],
         connect: true,
-        step: 1,
         range: { min: minDay, max: maxDay }
     });
 
-    const masterApi = master.noUiSlider!;
-    const detailApi = detail.noUiSlider!;
+    // 5. RÉCUPÉRER LES API (Cast explicite)
+    const masterApi = (masterEl as any).noUiSlider as API;
+    const detailApi = (detailEl as any).noUiSlider as API;
 
-    // --- Master → Detail ---
+    // 6. ÉVÉNEMENTS
     masterApi.on("update", (values) => {
-        const min = Math.round(Number(values[0]));
-        const max = Math.round(Number(values[1]));
-
-        detailApi.updateOptions(
-            { range: { min, max }, step: 1 },
-            true
-        );
-        detailApi.set([min, Math.min(min + 30, max)]);
+        const [min, max] = values.map(Number);
+        detailApi.updateOptions({ range: { min, max } }, false);
     });
 
-    // --- Aimantation douce ---
-    function applySnap(api: API) {
-        api.on("change", (values) => {
-            let vals = Array.isArray(values) ? values.map(Number) : [Number(values)];
-            let [min, max] = vals;
-
-            const snapMin = snapToMonth(min);
-            const snapMax = snapToMonth(max);
-
-            if (Math.abs(min - snapMin) < 5) min = snapMin;
-            if (Math.abs(max - snapMax) < 5) max = snapMax;
-
-            api.set([min, max]);
-        });
-    }
-
-    applySnap(masterApi);
-    applySnap(detailApi);
-
-    // --- Update UI + Chart ---
     detailApi.on("update", (values) => {
-        const vals = Array.isArray(values) ? values.map(Number) : [Number(values)];
-        const [min, max] = vals;
-        const span = max - min;
-
-        output.innerHTML = `
-            <b>From:</b> ${formatDay(min, span)}<br/>
-            <b>To:</b> ${formatDay(max, span)}
-        `;
-
-        updateChart(min, max);
+        const [min, max] = values.map(Number);
+        const sMin = Math.round(min);
+        const sMax = Math.round(max);
+        
+        if (outputEl) {
+            outputEl.innerHTML = `Du <b>${fromDay(sMin).toLocaleDateString()}</b> au <b>${fromDay(sMax).toLocaleDateString()}</b>`;
+        }
+        
+        syncChart(sMin, sMax);
     });
-
-    // --- Zoom molette sur détail ---
-    detail.addEventListener("wheel", (e) => {
-        e.preventDefault();
-
-        const raw = detailApi.get();
-        const values: number[] = Array.isArray(raw) ? raw.map(Number) : [Number(raw)];
-        let [min, max] = values;
-
-        const center = (min + max) / 2;
-        const range = max - min;
-        const zoom = e.deltaY > 0 ? 1.2 : 0.8;
-
-        let newRange = range * zoom;
-        newRange = Math.max(7, Math.min(newRange, maxDay - minDay));
-
-        let newMin = Math.round(center - newRange / 2);
-        let newMax = Math.round(center + newRange / 2);
-
-        newMin = Math.max(minDay, newMin);
-        newMax = Math.min(maxDay, newMax);
-
-        detailApi.set([newMin, newMax]);
-    });
-
-    // --- Chart ---
-    const chartEl = document.getElementById("chart") as HTMLCanvasElement;
-    const chart = new (window as any).Chart(chartEl, {
-        type: "line",
-        data: { labels: [], datasets: [{ label: "Value", data: [], tension: 0.2 }] },
-        options: { animation: false, responsive: true }
-    });
-
-    function updateChart(min: number, max: number) {
-        const filtered = DATA.filter(x => {
-            const day = toDay(x.t);
-            return day >= min && day <= max;
-        });
-
-        chart.data.labels = filtered.map(x => x.t);
-        chart.data.datasets[0].data = filtered.map(x => x.v);
-        chart.update();
-    }
 }
-
-// --- Auto-init ---
-document.addEventListener("DOMContentLoaded", () => {
-    initTimeSlider();
-});
