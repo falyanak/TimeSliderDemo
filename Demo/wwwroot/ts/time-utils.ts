@@ -51,3 +51,17 @@ export function formatTick(day: number, span: number): string {
 
     return d.toISOString().substring(0, 7);
 }
+
+export const dateTooltipFormatter = {
+    to: (value: number): string => {
+        const d = new Date(Math.round(value) * 86400000);
+        return d.toLocaleDateString(undefined, { 
+            day: '2-digit', 
+            month: 'short', 
+            year: 'numeric' // <--- CRITIQUE POUR L'AFFICHAGE
+        });
+    },
+    from: (value: string): number => {
+        return new Date(value).getTime() / 86400000;
+    }
+};

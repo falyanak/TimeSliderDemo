@@ -1,0 +1,87 @@
+/* --- Structure de la page --- */
+
+/* Verrouillage du graphique pour stopper la boucle infinie */
+.chart-container {
+    position: relative;
+    height: 450px; 
+    width: 100%;
+    /* Espace sous le graphique pour laisser la place aux tooltips du Master */
+    margin-bottom: 80px; 
+}
+
+/* --- Espacement des Sliders --- */
+
+#masterSlider {
+    /* Espace pour les tooltips au-dessus du Master */
+    margin-top: 70px; 
+}
+
+#detailSlider {
+    /* Espace de 150px entre les deux sliders */
+    margin-top: 150px !important; 
+    margin-bottom: 80px;
+}
+
+/* --- Style des 4 Tooltips Noirs Permanents AU-DESSUS --- */
+
+.noUi-tooltip {
+    display: block !important; /* Force l'affichage permanent */
+    opacity: 1 !important;
+    padding: 4px 10px;        /* Plus de place pour l'année "2026" */
+    border-radius: 4px;
+    background: #000000 !important; /* Noir profond */
+    color: #ffffff !important;      /* Texte blanc pur */
+    font-size: 10px;
+    font-weight: 600;
+    border: 1px solid #333;
+    white-space: nowrap;      /* Garantit que l'année ne passe pas à la ligne */
+    z-index: 10;
+    pointer-events: none;
+    
+    /* Positionnement AU-DESSUS strict pour les 4 bulles */
+    bottom: auto !important;
+    top: -38px !important; 
+}
+
+/* --- Ajustement des poignées (Look standard noUiSlider) --- */
+
+.noUi-handle {
+    cursor: grab;
+    /* On garde le look rectangulaire avec les encoches par défaut */
+    z-index: 5; 
+}
+
+.noUi-active .noUi-handle {
+    cursor: grabbing;
+}
+
+/* --- Esthétique des barres --- */
+
+/* Couleur de la zone sélectionnée (Bleu) */
+.noUi-connect {
+    background: #3b82f6; 
+}
+
+/* Finesse des barres de fond */
+.noUi-target {
+    height: 8px;
+    border: none;
+    background: #e0e0e0;
+    box-shadow: inset 0 1px 1px rgba(0,0,0,0.1);
+}
+
+/* Assurer que les lignes décoratives sur les poignées sont visibles */
+.noUi-handle:before,
+.noUi-handle:after {
+    content: "";
+    display: block;
+    position: absolute;
+    height: 14px;
+    width: 1px;
+    background: #E8E7E6;
+    left: 14px;
+    top: 6px;
+}
+.noUi-handle:after {
+    left: 17px;
+}

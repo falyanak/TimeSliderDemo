@@ -16437,14 +16437,31 @@ var init_TimeSliderComponent = __esm({
       chart = null;
       masterApi = null;
       detailApi = null;
-      // Pour éviter les calculs inutiles si les valeurs sont identiques
+      // VERROU : Empêche Chart.js de boucler à l'infini
       lastMin = -1;
       lastMax = -1;
+      /**
+       * Le formateur interne : C'est ici que l'année a été ajoutée.
+       */
+      dateFormatter = {
+        to: (value) => {
+          const date = new Date(Math.round(value) * this.MS_PER_DAY);
+          return date.toLocaleDateString(void 0, {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+            // <--- L'ANNÉE EST ICI MAINTENANT
+          });
+        },
+        // Nécessaire pour que noUiSlider comprenne comment lire la valeur si besoin
+        from: (value) => {
+          return new Date(value).getTime() / this.MS_PER_DAY;
+        }
+      };
       init() {
         const masterEl = document.getElementById("masterSlider");
         const detailEl = document.getElementById("detailSlider");
         const chartEl = document.getElementById("chart");
-        const outputEl = document.getElementById("output");
         if (!masterEl || !detailEl || !chartEl) return;
         if (masterEl.noUiSlider) return;
         const container = chartEl.parentElement;
@@ -16453,21 +16470,17 @@ var init_TimeSliderComponent = __esm({
           container.style.position = "relative";
         }
         this.chart = new TimeSeriesChart(chartEl);
-        console.log("Chart initialis\xE9 \u2705");
         const minDay = this.toDay(this.start);
         const maxDay = this.toDay(this.end);
-        nouislider_default.create(masterEl, {
-          start: [minDay, maxDay],
+        const sliderConfig = {
+          step: 1,
           connect: true,
-          range: { min: minDay, max: maxDay },
-          step: 1
-        });
-        nouislider_default.create(detailEl, {
-          start: [minDay, minDay + 30],
-          connect: true,
-          range: { min: minDay, max: maxDay },
-          step: 1
-        });
+          tooltips: [this.dateFormatter, this.dateFormatter],
+          // Applique le formateur aux 4 bulles
+          range: { min: minDay, max: maxDay }
+        };
+        nouislider_default.create(masterEl, { ...sliderConfig, start: [minDay, maxDay] });
+        nouislider_default.create(detailEl, { ...sliderConfig, start: [minDay, minDay + 30] });
         this.masterApi = masterEl.noUiSlider;
         this.detailApi = detailEl.noUiSlider;
         this.masterApi.on("slide", (values) => {
@@ -16481,9 +16494,6 @@ var init_TimeSliderComponent = __esm({
           if (sMin === this.lastMin && sMax === this.lastMax) return;
           this.lastMin = sMin;
           this.lastMax = sMax;
-          if (outputEl) {
-            outputEl.innerHTML = `P\xE9riode : <b>${this.fromDay(sMin).toLocaleDateString()}</b> au <b>${this.fromDay(sMax).toLocaleDateString()}</b>`;
-          }
           this.syncData(sMin, sMax);
         });
       }
@@ -16498,7 +16508,6 @@ var init_TimeSliderComponent = __esm({
         );
       }
       toDay = (date) => Math.floor(new Date(date).getTime() / this.MS_PER_DAY);
-      fromDay = (day) => new Date(day * this.MS_PER_DAY);
     };
   }
 });
