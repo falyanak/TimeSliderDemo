@@ -1,0 +1,41 @@
+# --- IDE & OS ---
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.DS_Store
+Thumbs.db
+
+# --- .NET (Core & 5+) ---
+bin/
+obj/
+publish/
+*.exe
+*.dll
+*.pdb
+*.nupkg
+
+# --- Node.js / Web ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# --- TypeScript / Build ---
+# On ignore le dossier de sortie JS si on utilise des bundles (ex: wwwroot/js/main.js)
+# wwwroot/js/
+dist/
+out/
+
+# --- Environnement & Secrets ---
+.env
+.env.local
+.env.*.local
+*.usersecrets
+
+# --- Devcontainer ---
+# On garde généralement .devcontainer/, mais on ignore les logs d'extension
+.devcontainer/debug.log
