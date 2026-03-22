@@ -14547,64 +14547,92 @@ var init_ChartManager = __esm({
   }
 });
 
+// ClientApp/time-form/time-form.ts
+var TimeFormManager;
+var init_time_form = __esm({
+  "ClientApp/time-form/time-form.ts"() {
+    "use strict";
+    init_ChartManager();
+    TimeFormManager = class {
+      constructor(app, startInput, endInput, display, stepSel) {
+        this.app = app;
+        this.startInput = startInput;
+        this.endInput = endInput;
+        this.display = display;
+        this.stepSel = stepSel;
+        this.chart = new ChartManager("chart");
+        this.minLimit = new Date(this.app.dataset.start || "2020-01-01");
+        this.today = /* @__PURE__ */ new Date();
+        this.today.setHours(0, 0, 0, 0);
+      }
+      chart;
+      minLimit;
+      today;
+      async update() {
+        const fmt = (s) => new Date(s).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+        if (this.display) {
+          this.display.innerHTML = `${fmt(this.startInput.value)} &nbsp;-&nbsp; ${fmt(this.endInput.value)}`;
+        }
+        const res = await fetch(`/Time/GetData?start=${this.startInput.value}&end=${this.endInput.value}`);
+        this.chart.update(await res.json());
+      }
+      setToDefault() {
+        const range = parseInt(this.app.dataset.range || "60");
+        const now = new Date(this.today);
+        this.endInput.value = now.toISOString().split("T")[0];
+        now.setDate(now.getDate() - range);
+        this.startInput.value = (now < this.minLimit ? this.minLimit : now).toISOString().split("T")[0];
+        this.update();
+      }
+      adjust(isStart, isIncrement) {
+        const input = isStart ? this.startInput : this.endInput;
+        const step = parseInt(this.stepSel.value) || 1;
+        const delta = isIncrement ? step : -step;
+        let d = new Date(input.value);
+        d.setDate(d.getDate() + delta);
+        if (isStart) {
+          if (d < this.minLimit) d = this.minLimit;
+          if (d > new Date(this.endInput.value)) d = new Date(this.endInput.value);
+        } else {
+          if (d > this.today) d = this.today;
+          if (d < new Date(this.startInput.value)) d = new Date(this.startInput.value);
+        }
+        input.value = d.toISOString().split("T")[0];
+        this.update();
+      }
+    };
+  }
+});
+
 // ClientApp/time-form/main.ts
 var require_main = __commonJS({
   "ClientApp/time-form/main.ts"() {
-    init_ChartManager();
-    var app = document.getElementById("time-form-app");
-    var startInput = document.getElementById("input-start");
-    var endInput = document.getElementById("input-end");
-    var stepSel = document.getElementById("stepUnit");
-    var display = document.getElementById("display-range");
-    var chart = new ChartManager("chart");
-    var minLimit = new Date(app.dataset.start || "2020-01-01");
-    var getToday = () => {
-      const d = /* @__PURE__ */ new Date();
-      d.setHours(0, 0, 0, 0);
-      return d;
-    };
-    var update = async () => {
-      const fmt = (s) => new Date(s).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
-      if (display) display.innerHTML = `${fmt(startInput.value)} &nbsp;-&nbsp; ${fmt(endInput.value)}`;
-      const res = await fetch(`/Time/GetData?start=${startInput.value}&end=${endInput.value}`);
-      chart.update(await res.json());
-    };
-    var setToDefault = (e) => {
-      if (e) e.preventDefault();
-      const range = parseInt(app.dataset.range || "60");
-      const now = getToday();
-      endInput.value = now.toISOString().split("T")[0];
-      const start = new Date(now);
-      start.setDate(start.getDate() - range);
-      startInput.value = (start < minLimit ? minLimit : start).toISOString().split("T")[0];
-      update();
-    };
-    var adjust = (isStart, delta) => {
-      const input = isStart ? startInput : endInput;
-      let d = new Date(input.value);
-      d.setDate(d.getDate() + delta);
-      if (isStart) {
-        if (d < minLimit) d = minLimit;
-        if (d > new Date(endInput.value)) d = new Date(endInput.value);
-      } else {
-        if (d > getToday()) d = getToday();
-        if (d < new Date(startInput.value)) d = new Date(startInput.value);
-      }
-      input.value = d.toISOString().split("T")[0];
-      update();
-    };
+    init_time_form();
     document.addEventListener("DOMContentLoaded", () => {
+      const app = document.getElementById("time-form-app");
+      const startInput = document.getElementById("input-start");
+      const endInput = document.getElementById("input-end");
+      const stepSel = document.getElementById("stepUnit");
+      const display = document.getElementById("display-range");
+      if (!app || !startInput || !endInput) return;
+      const manager = new TimeFormManager(app, startInput, endInput, display, stepSel);
       document.getElementById("btn-decrement-start")?.addEventListener("click", (e) => {
         e.preventDefault();
-        adjust(true, -(parseInt(stepSel.value) || 1));
+        manager.adjust(true, false);
       });
       document.getElementById("btn-increment-end")?.addEventListener("click", (e) => {
         e.preventDefault();
-        adjust(false, parseInt(stepSel.value) || 1);
+        manager.adjust(false, true);
       });
-      document.getElementById("btn-reset")?.addEventListener("click", setToDefault);
-      document.getElementById("btn-apply-filter")?.addEventListener("click", update);
-      setToDefault();
+      document.getElementById("btn-reset")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        manager.setToDefault();
+      });
+      document.getElementById("btn-apply-filter")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        manager.update();
+      });
+      manager.setToDefault();
     });
   }
 });

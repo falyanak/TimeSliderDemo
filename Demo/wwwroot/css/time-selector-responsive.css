@@ -1,50 +1,84 @@
-/* Conteneur global de la navigation */
-.time-nav-grid {
-    display: grid;
-    /* Les boutons s'adaptent au texte, le centre prend le reste */
-    grid-template-columns: auto 1fr auto; 
-    gap: 15px;
-    align-items: center;
-    justify-content: center;
+/* --- Conteneur et Alignement Global --- */
+.time-form-container, .time-slider-container {
+    max-width: 100%;
+    margin: 0 auto;
 }
 
-/* Limitation de la largeur du sélecteur de pas */
-.step-selection-wrapper {
-    max-width: 300px;
-    justify-self: center; /* Centre le sélecteur si l'espace est large */
+/* --- Barre de Commande Haute (Pilule centrée) --- */
+.time-nav-wrapper {
+    display: flex;
+    justify-content: center;
     width: 100%;
 }
 
-.time-nav-grid .btn {
-    min-width: 110px; /* Largeur minimale pour accueillir le texte "Reculer/Avancer" */
-    height: 45px;
-    font-weight: 500;
+.time-nav-grid {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background-color: #fff;
+    padding: 3px;
+    border-radius: 20px;
+    border: 1px solid #dee2e6;
 }
 
-.time-nav-grid .form-select {
-    height: 45px;
+/* Standardisation de la hauteur "Micro" à 30px */
+.time-form-container .btn-sm,
+.time-form-container .form-select-sm,
+.time-form-container .form-control-sm {
+    height: 30px !important;
+    font-size: 0.8rem !important;
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+    box-shadow: none !important;
 }
 
-/* Grille pour les dates */
+/* Boutons de navigation (Reculer/Avancer) */
+.btn-nav {
+    min-width: 90px;
+    border-radius: 15px !important;
+    font-weight: 600;
+}
+
+/* Sélecteur de Pas (Step) */
+#stepUnit {
+    width: 110px !important; /* Largeur augmentée pour lisibilité */
+    border-radius: 15px !important;
+    text-align: center;
+    border-color: #0d6efd;
+    cursor: pointer;
+}
+
+/* --- Grille des Inputs & Actions (Bas) --- */
 .time-inputs-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    max-width: 700px;
+    margin: 0 auto;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 10px;
 }
 
-/* --- Ajustement Mobile (Smartphone) --- */
+.label-micro {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #6c757d;
+    text-transform: uppercase;
+    margin-bottom: 1px;
+}
+
+/* --- Responsive Mobile --- */
 @media (max-width: 576px) {
-    .time-nav-grid {
-        /* On réduit l'espace sur mobile */
-        grid-template-columns: auto 1fr auto;
-        gap: 8px;
-    }
+    .btn-nav span { display: none; } /* On ne garde que l'icône */
+    .btn-nav { min-width: 40px; }
+    #stepUnit { width: 90px !important; }
     
-    .time-nav-grid .btn span {
-        display: none; /* Cache le texte sur mobile pour ne garder que l'icône si trop étroit */
-    }
+    .time-inputs-grid { padding: 8px; }
     
-    .time-nav-grid .btn {
-        min-width: 45px;
+    /* On force les boutons Reset/Appliquer à être sur la même ligne */
+    .mobile-actions {
+        display: flex;
+        gap: 5px;
+        width: 100%;
     }
 }
