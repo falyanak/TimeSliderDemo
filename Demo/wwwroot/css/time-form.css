@@ -1,0 +1,63 @@
+/* --- Bloc Navigation Centré --- */
+.time-nav-wrapper {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.time-nav-grid {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    background-color: #fff;
+    border: 1px solid #0d6efd;
+    border-radius: 0;
+    overflow: hidden;
+}
+
+/* Éléments internes (hauteur 30px) */
+.time-form-container .btn-nav,
+.time-form-container #stepUnit {
+    height: 30px !important;
+    font-size: 0.8rem !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.btn-nav {
+    min-width: 85px;
+    font-weight: 600;
+}
+
+#stepUnit {
+    width: 105px !important;
+    border-left: 1px solid #0d6efd !important;
+    border-right: 1px solid #0d6efd !important;
+    text-align: center;
+    background-color: #f8f9fa;
+}
+
+/* --- Grille des Calendriers --- */
+.time-inputs-grid {
+    max-width: 700px;
+    margin: 0 auto;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    padding: 10px;
+}
+
+.label-micro {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #6c757d;
+    text-transform: uppercase;
+    margin-bottom: 1px;
+}
+
+@media (max-width: 576px) {
+    .btn-nav { min-width: 75px; font-size: 0.7rem !important; }
+    #stepUnit { width: 85px !important; }
+}

@@ -4,33 +4,30 @@
     ViewData["Title"] = "Analyse Temporelle";
 }
 
-@* Styles spécifiques au mode Slider *@
-<link href="~/lib/nouislider/nouislider.css" rel="stylesheet" />
-<link href="~/css/slider.css" rel="stylesheet" />
+
+<link rel="stylesheet" href="~/lib/nouislider/nouislider.min.css" />
+<link rel="stylesheet" href="~/css/time-slider.css" asp-append-version="true" />
+
 
 @* Conteneur Root : Injecte les données pour TimeSliderComponent.ts *@
-<div id="time-slider-app" 
-     data-start="@Model.StartDate" 
-     data-end="@Model.EndDate" 
-     data-points='@Model.JsonData'
-     data-range="@Model.RangeDays" 
-     class="container mt-3">
+<div id="time-slider-app" data-start="@Model.StartDate" data-end="@Model.EndDate" data-points='@Model.JsonData'
+     data-range="@Model.RangeDays" class="container mt-3">
 
     <div class="accordion shadow-sm mb-4" id="timeSelectionAccordion">
         <div class="accordion-item shadow-none border-0">
             <h2 class="accordion-header" id="headingTime">
                 @* Utilisation de d-flex pour centrer la période entre l'icône et le chevron *@
-                <button class="accordion-button fw-bold d-flex align-items-center" type="button" 
+                <button class="accordion-button fw-bold d-flex align-items-center" type="button"
                         data-bs-toggle="collapse" data-bs-target="#collapseTime" aria-expanded="true">
-                    
+
                     <i class="bi bi-calendar3 text-primary"></i>
-                    
+
                     @* Ce div occupe tout l'espace et centre son contenu *@
                     <div class="flex-grow-1 text-center px-2">
                         <span class="d-none d-sm-inline text-muted fw-normal">Période : </span>
                         @* Mis à jour dynamiquement par TimeSliderComponent.ts via l'ID display-range *@
                         <strong class="ms-1 text-dark" id="display-range">
-                            @DateTime.Parse(Model.StartDate).ToString("dd MMM yyyy") - 
+                            @DateTime.Parse(Model.StartDate).ToString("dd MMM yyyy") -
                             @DateTime.Parse(Model.EndDate).ToString("dd MMM yyyy")
                         </strong>
                     </div>

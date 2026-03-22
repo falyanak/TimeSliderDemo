@@ -1,10 +1,4 @@
-/* --- Conteneur et Alignement Global --- */
-.time-form-container, .time-slider-container {
-    max-width: 100%;
-    margin: 0 auto;
-}
-
-/* --- Barre de Commande Haute (Pilule centrée) --- */
+/* --- Barre de Commande Haute (Pilule Carrée Centrée) --- */
 .time-nav-wrapper {
     display: flex;
     justify-content: center;
@@ -14,11 +8,11 @@
 .time-nav-grid {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 0;
     background-color: #fff;
-    padding: 3px;
-    border-radius: 20px;
-    border: 1px solid #dee2e6;
+    border: 1px solid #0d6efd;
+    border-radius: 0; /* Angles droits */
+    overflow: hidden;
 }
 
 /* Standardisation de la hauteur "Micro" à 30px */
@@ -29,33 +23,46 @@
     font-size: 0.8rem !important;
     padding-top: 2px !important;
     padding-bottom: 2px !important;
+    border-radius: 0 !important;
     box-shadow: none !important;
 }
 
-/* Boutons de navigation (Reculer/Avancer) */
+/* Boutons de navigation */
 .btn-nav {
-    min-width: 90px;
-    border-radius: 15px !important;
+    min-width: 85px; /* Largeur calculée pour "Reculer" / "Avancer" */
+    border: none !important;
     font-weight: 600;
+    background-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-nav:hover {
+    background-color: #0d6efd;
+    color: white !important;
 }
 
 /* Sélecteur de Pas (Step) */
 #stepUnit {
-    width: 110px !important; /* Largeur augmentée pour lisibilité */
-    border-radius: 15px !important;
+    width: 105px !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: 1px solid #0d6efd !important;
+    border-right: 1px solid #0d6efd !important;
     text-align: center;
-    border-color: #0d6efd;
+    background-color: #f8f9fa;
     cursor: pointer;
 }
 
-/* --- Grille des Inputs & Actions (Bas) --- */
+/* --- Grille des Inputs (Bas) --- */
 .time-inputs-grid {
     max-width: 700px;
     margin: 0 auto;
     background-color: #fff;
     border: 1px solid #dee2e6;
-    border-radius: 8px;
     padding: 10px;
+    border-radius: 0;
 }
 
 .label-micro {
@@ -67,18 +74,23 @@
     margin-bottom: 1px;
 }
 
-/* --- Responsive Mobile --- */
+/* --- Ajustements Spécifiques Mobile --- */
 @media (max-width: 576px) {
-    .btn-nav span { display: none; } /* On ne garde que l'icône */
-    .btn-nav { min-width: 40px; }
-    #stepUnit { width: 90px !important; }
+    .btn-nav {
+        min-width: 75px; /* On réduit légèrement la zone de clic */
+        padding: 0 5px !important;
+    }
     
-    .time-inputs-grid { padding: 8px; }
-    
-    /* On force les boutons Reset/Appliquer à être sur la même ligne */
-    .mobile-actions {
-        display: flex;
-        gap: 5px;
-        width: 100%;
+    .btn-nav span {
+        font-size: 0.7rem !important; /* Texte un peu plus petit pour garantir que ça tient */
+    }
+
+    #stepUnit {
+        width: 85px !important;
+        font-size: 0.75rem !important;
+    }
+
+    .time-nav-grid {
+        transform: scale(0.95); /* Micro-ajustement si l'écran est vraiment étroit */
     }
 }
