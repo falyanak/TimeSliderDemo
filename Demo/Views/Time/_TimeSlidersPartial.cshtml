@@ -1,12 +1,23 @@
 @model Demo.Models.TimeSliderViewModel
 
-<div class="sliders-wrapper p-3 shadow-sm">
-    <div class="mb-3">
+<div id="time-slider-app" 
+     class="sliders-wrapper shadow-sm"
+     data-start="@Model.StartDate" 
+     data-end="@Model.EndDate" 
+     data-range="@Model.RangeDays"
+     data-points='@Html.Raw(Json.Serialize(Model.Data))'>
+
+    <button type="button" id="btn-reset-slider" class="btn-reset-top" title="Réinitialiser">
+        <i class="bi bi-arrow-counterclockwise"></i>
+        Reset
+    </button>
+
+    <div class="mb-5">
         <label class="label-mini">VUE GLOBALE (MASTER)</label>
         <div id="masterSlider"></div>
     </div>
 
-    <div class="mb-3">
+    <div>
         <label class="label-mini">SÉLECTION DÉTAILLÉE</label>
         <div id="detailSlider"></div>
     </div>

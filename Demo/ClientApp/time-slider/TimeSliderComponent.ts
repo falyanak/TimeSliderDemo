@@ -18,36 +18,17 @@ export class TimeSliderComponent {
         private readonly range: number
     ) { }
 
-    /**
-     * Formatteur pour les tooltips noUiSlider
-     */
-   private readonly dateFormatter = {
+    private readonly dateFormatter = {
         to: (value: number): string => {
             const d = new Date(Math.round(value) * this.MS_PER_DAY);
-            
-            // Format adapté selon la largeur de l'écran
             if (window.innerWidth < 600) {
-                // Format compact : 22/03/26
-                return d.toLocaleDateString('fr-FR', { 
-                    day: '2-digit', 
-                    month: '2-digit',
-                    year: '2-digit' 
-                });
+                return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
             }
-            
-            // Format complet : 22 mars 2026
-            return d.toLocaleDateString('fr-FR', { 
-                day: '2-digit', 
-                month: 'short',
-                year: 'numeric' 
-            });
+            return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
         },
         from: (value: string): number => new Date(value).getTime() / this.MS_PER_DAY
     };
 
-    /**
-     * Formatteur pour l'affichage textuel (Accordéon)
-     */
     private formatDateFriendly(dateStr: string): string {
         const d = new Date(dateStr);
         return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -59,7 +40,6 @@ export class TimeSliderComponent {
         
         if (!masterEl || !detailEl || (masterEl as any).noUiSlider) return;
 
-        // On utilise le manager partagé
         this.chartManager = new ChartManager('chart');
 
         const minDay = this.toDay(this.start);
@@ -84,7 +64,6 @@ export class TimeSliderComponent {
             const mMax = Math.round(Number(vals[1]));
             const mMin = Math.round(Number(vals[0]));
             this.detailApi?.updateOptions({ range: { min: mMin, max: mMax } }, false);
-            // On s'assure que le détail reste dans les clous
             this.detailApi?.set([Math.max(mMin, mMax - this.range), mMax]);
         });
 
@@ -92,12 +71,49 @@ export class TimeSliderComponent {
         this.detailApi.on("update", (vals) => {
             const sMin = Math.round(Number(vals[0]));
             const sMax = Math.round(Number(vals[1]));
-            
             if (sMin === this.lastMin && sMax === this.lastMax) return;
-            
             this.lastMin = sMin; 
             this.lastMax = sMax;
             this.syncUI(sMin, sMax);
+        });
+
+        this.bindReset();
+    }
+
+/**
+     * Réinitialise les sliders selon la logique du formulaire (End - Range)
+     */
+    private bindReset(): void {
+        const resetBtn = document.getElementById('btn-reset-slider');
+        if (!resetBtn) return;
+
+        resetBtn.addEventListener('click', () => {
+            // 1. Bornes absolues autorisées (définies à l'init)
+            const minLimitDay = this.toDay(this.start);
+            const maxLimitDay = this.toDay(this.end);
+
+            // 2. Calcul de la sélection par défaut (Date de fin - Range)
+            // On reproduit exactement : now.setDate(now.getDate() - range)
+            const defaultStartDay = maxLimitDay - this.range;
+            
+            // On applique la sécurité : (now < this.minLimit ? this.minLimit : now)
+            const finalStartDay = defaultStartDay < minLimitDay ? minLimitDay : defaultStartDay;
+
+            // 3. Application au Master (Vue Totale)
+            if (this.masterApi) {
+                this.masterApi.set([minLimitDay, maxLimitDay]);
+            }
+
+            // 4. Application au Detail (Vue Fenêtrée)
+            if (this.detailApi) {
+                // On restaure d'abord le range complet pour permettre le positionnement
+                this.detailApi.updateOptions({
+                    range: { min: minLimitDay, max: maxLimitDay }
+                }, false);
+                
+                // On positionne les poignées sur la période calculée
+                this.detailApi.set([finalStartDay, maxLimitDay]);
+            }
         });
     }
 
@@ -105,22 +121,17 @@ export class TimeSliderComponent {
         const startDate = new Date(min * this.MS_PER_DAY).toISOString().split('T')[0];
         const endDate = new Date(max * this.MS_PER_DAY).toISOString().split('T')[0];
 
-        // 1. Mise à jour des inputs cachés (pour compatibilité boutons/forms)
         const inputS = document.getElementById("filter-start") as HTMLInputElement;
         const inputE = document.getElementById("filter-end") as HTMLInputElement;
         if (inputS) inputS.value = startDate;
         if (inputE) inputE.value = endDate;
 
-        // 2. SYNCHRONISATION DE L'ACCORDÉON
         const displayRange = document.getElementById('display-range');
         if (displayRange) {
             displayRange.innerHTML = `${this.formatDateFriendly(startDate)} &nbsp;-&nbsp; ${this.formatDateFriendly(endDate)}`;
         }
 
-        // 3. FILTRAGE ET MISE À JOUR DU GRAPHIQUE
-        // Note: Ici on filtre localement les data initiales injectées
         const filtered = this.data.filter(p => p.t >= startDate && p.t <= endDate);
-        
         if (this.chartManager) {
             this.chartManager.update(filtered);
         }

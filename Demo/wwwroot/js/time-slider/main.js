@@ -16437,30 +16437,16 @@ var init_TimeSliderComponent = __esm({
       detailApi = null;
       lastMin = -1;
       lastMax = -1;
-      /**
-       * Formatteur pour les tooltips noUiSlider
-       */
       dateFormatter = {
         to: (value) => {
           const d = new Date(Math.round(value) * this.MS_PER_DAY);
           if (window.innerWidth < 600) {
-            return d.toLocaleDateString("fr-FR", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "2-digit"
-            });
+            return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" });
           }
-          return d.toLocaleDateString("fr-FR", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric"
-          });
+          return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
         },
         from: (value) => new Date(value).getTime() / this.MS_PER_DAY
       };
-      /**
-       * Formatteur pour l'affichage textuel (Accordéon)
-       */
       formatDateFriendly(dateStr) {
         const d = new Date(dateStr);
         return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
@@ -16496,6 +16482,29 @@ var init_TimeSliderComponent = __esm({
           this.lastMin = sMin;
           this.lastMax = sMax;
           this.syncUI(sMin, sMax);
+        });
+        this.bindReset();
+      }
+      /**
+           * Réinitialise les sliders selon la logique du formulaire (End - Range)
+           */
+      bindReset() {
+        const resetBtn = document.getElementById("btn-reset-slider");
+        if (!resetBtn) return;
+        resetBtn.addEventListener("click", () => {
+          const minLimitDay = this.toDay(this.start);
+          const maxLimitDay = this.toDay(this.end);
+          const defaultStartDay = maxLimitDay - this.range;
+          const finalStartDay = defaultStartDay < minLimitDay ? minLimitDay : defaultStartDay;
+          if (this.masterApi) {
+            this.masterApi.set([minLimitDay, maxLimitDay]);
+          }
+          if (this.detailApi) {
+            this.detailApi.updateOptions({
+              range: { min: minLimitDay, max: maxLimitDay }
+            }, false);
+            this.detailApi.set([finalStartDay, maxLimitDay]);
+          }
         });
       }
       syncUI(min, max) {
