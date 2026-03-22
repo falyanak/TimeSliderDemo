@@ -5,7 +5,7 @@ namespace Demo.Controllers;
 
 public class TimeController : Controller
 {
-    public IActionResult Index(bool useSlider = true)
+    public IActionResult Index(bool useSlider = false)
     {
         var start = DateTime.Now.AddYears(-5);
         var end = DateTime.Now;
