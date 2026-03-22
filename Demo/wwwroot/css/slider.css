@@ -1,104 +1,139 @@
-/* --- Structure de la page --- */
+/* --- Structure et Zone de Sécurité --- */
 
 .chart-container {
     position: relative;
-    height: 350px; /* Réduit pour éviter de manger tout l'écran */
+    height: 350px;
     width: 100%;
-    margin-bottom: 40px; /* Espace suffisant pour le titre du slider suivant */
-}
-
-/* --- Espacement des Sliders Resserré --- */
-
-#masterSlider {
-    /* Augmenté de 45px à 65px pour laisser passer le tooltip sous le libellé */
-    margin-top: 65px !important; 
-    margin-bottom: 30px;
-}
-
-#detailSlider {
-    /* On garde un espace constant pour la cohérence visuelle */
-    margin-top: 65px !important; 
     margin-bottom: 40px;
 }
 
-/* On s'assure que le libellé ne colle pas au slider */
+/* Conteneur parent indispensable pour isoler les sliders et leurs tooltips */
+.sliders-section {
+    padding: 20px 40px !important; /* Marge de sécurité pour les tooltips */
+    background: #fdfdfd;
+    border-radius: 8px;
+}
+
+/* --- Espacement des Sliders --- */
+
+#masterSlider, #detailSlider {
+    height: 8px;
+    border: none;
+    background: #e5e7eb;
+    border-radius: 4px;
+    margin-top: 60px !important; 
+    margin-bottom: 45px !important;
+}
+
+/* Libellés des sections */
 .sliders-section small.text-muted {
-    margin-bottom: 12px !important;
     display: block;
+    margin-bottom: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.7rem;
 }
 
-
-
-/* Suppression de l'espace géant entre les deux */
-#detailSlider {
-    margin-top: 50px !important; 
-}
-
-/* --- Style des 4 Tooltips Noirs Permanents --- */
+/* --- Style des Tooltips Noirs --- */
 
 .noUi-tooltip {
     display: block !important; 
     opacity: 1 !important;
-    padding: 4px 8px;
-    border-radius: 4px;
-    background: #1a1a1b !important; /* Noir mat moderne */
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: #1a1a1b !important; /* Noir mat */
     color: #ffffff !important;
     font-size: 11px;
     font-weight: 600;
     border: none;
     white-space: nowrap;
     z-index: 10;
-    
-    /* Positionnement AU-DESSUS des poignées */
+    top: -42px !important; /* Position au-dessus de la poignée */
     bottom: auto !important;
-    top: -38px !important; 
 }
 
-/* Petit triangle sous le tooltip pour pointer la poignée */
+/* Triangle sous le tooltip (Commun) */
 .noUi-tooltip:after {
     content: "";
     position: absolute;
     top: 100%;
-    left: 50%;
-    margin-left: -5px;
-    border-width: 5px;
+    border-width: 6px;
     border-style: solid;
     border-color: #1a1a1b transparent transparent transparent;
 }
 
-/* --- Ajustement des poignées (Standard noUiSlider) --- */
+/* --- PROTECTION ANTI-DÉBORDEMENT (LA CLÉ) --- */
+
+/* 1. Poignée de GAUCHE (Handle 0) */
+/* On aligne le bord gauche du tooltip sur la poignée au lieu de le centrer */
+.noUi-handle-lower .noUi-tooltip {
+    left: 0 !important;
+    transform: translateX(-15px) !important; /* Ajustement pour couvrir la poignée */
+}
+.noUi-handle-lower .noUi-tooltip:after {
+    left: 15px !important; /* Aligne le triangle sur la poignée */
+}
+
+/* 2. Poignée de DROITE (Handle 1) */
+/* On aligne le bord droit du tooltip sur la poignée */
+.noUi-handle-upper .noUi-tooltip {
+    left: auto !important;
+    right: 0 !important;
+    transform: translateX(15px) !important;
+}
+.noUi-handle-upper .noUi-tooltip:after {
+    left: auto !important;
+    right: 15px !important;
+}
+
+/* --- Esthétique des Poignées (Handles) --- */
 
 .noUi-handle {
     cursor: grab;
-    width: 28px !important;
-    height: 24px !important;
-    right: -14px !important; /* Centre la poignée sur le point */
-    top: -9px !important;    /* Centre verticalement sur la barre de 8px */
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    border: 1px solid #D9D9D9;
-    background: #FFF;
+    width: 22px !important;
+    height: 22px !important;
+    right: -11px !important; /* Centrage précis sur la barre */
+    top: -8px !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    border: 2px solid #ffffff;
+    background: #2563eb; /* Poignée bleue pour rappeler le graphe */
+    border-radius: 50%;
+}
+
+/* On cache les lignes de design par défaut de noUiSlider */
+.noUi-handle:before, .noUi-handle:after {
+    display: none;
 }
 
 .noUi-active .noUi-handle {
     cursor: grabbing;
+    transform: scale(1.15);
+    background: #1d4ed8;
+    transition: transform 0.15s ease, background 0.15s ease;
 }
 
-/* --- Esthétique des barres --- */
+/* --- Couleur de connexion (Barre entre les poignées) --- */
 
 .noUi-connect {
-    background: #2563eb; /* Bleu plus vif pour GitHub */
+    background: #2563eb;
 }
 
-.noUi-target {
-    height: 8px;
-    border: none;
-    background: #f3f4f6;
-    border-radius: 4px;
-}
+/* --- Ajustements Responsifs --- */
 
-/* Encoches décoratives sur les poignées */
-.noUi-handle:before,
-.noUi-handle:after {
-    height: 10px;
-    top: 6px;
+@media (max-width: 600px) {
+    .sliders-section {
+        padding: 15px 30px !important;
+    }
+
+    #masterSlider, #detailSlider {
+        margin-top: 50px !important;
+        margin-bottom: 35px !important;
+    }
+
+    .noUi-tooltip {
+        font-size: 10px !important;
+        padding: 3px 8px !important;
+        top: -38px !important;
+    }
 }

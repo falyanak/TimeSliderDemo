@@ -16361,72 +16361,69 @@ var init_chart = __esm({
   }
 });
 
-// node_modules/chart.js/auto/auto.js
-var auto_default;
-var init_auto = __esm({
-  "node_modules/chart.js/auto/auto.js"() {
-    init_chart();
+// ClientApp/shared/ChartManager.ts
+var ChartManager;
+var init_ChartManager = __esm({
+  "ClientApp/shared/ChartManager.ts"() {
+    "use strict";
     init_chart();
     Chart.register(...registerables);
-    auto_default = Chart;
-  }
-});
-
-// wwwroot/ts/TimeSeriesChart.ts
-var TimeSeriesChart;
-var init_TimeSeriesChart = __esm({
-  "wwwroot/ts/TimeSeriesChart.ts"() {
-    "use strict";
-    init_auto();
-    TimeSeriesChart = class {
-      chart;
-      constructor(canvas) {
-        this.chart = new auto_default(canvas, {
-          type: "line",
-          data: {
-            labels: [],
-            datasets: [{
-              label: "Valeur",
-              data: [],
-              borderColor: "#3b82f6",
-              backgroundColor: "rgba(59, 130, 246, 0.1)",
-              tension: 0.1,
-              pointRadius: 0,
-              fill: true
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            // OBLIGATOIRE pour respecter la hauteur du parent
-            animation: false,
-            // Désactive les animations pour fluidifier le slider
-            elements: {
-              line: { tension: 0 }
-              // Désactiver le lissage (Bézier) peut aussi aider les perfs
+    ChartManager = class {
+      constructor(canvasId) {
+        this.canvasId = canvasId;
+      }
+      chart = null;
+      update(data) {
+        const ctx = document.getElementById(this.canvasId);
+        if (!ctx || !data) return;
+        console.log("Donn\xE9es re\xE7ues par le manager :", data[0]);
+        const labels = data.map((d) => d.t);
+        const values = data.map((d) => d.v);
+        if (this.chart) {
+          this.chart.data.labels = labels;
+          this.chart.data.datasets[0].data = values;
+          this.chart.update();
+        } else {
+          this.chart = new Chart(ctx, {
+            type: "line",
+            data: {
+              labels,
+              datasets: [{
+                label: "Analyse",
+                data: values,
+                borderColor: "#2563eb",
+                backgroundColor: "rgba(37, 99, 235, 0.1)",
+                fill: true,
+                tension: 0.3,
+                pointRadius: 0
+                // Évite de surcharger si 1800 points
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                x: { display: true },
+                y: { beginAtZero: false }
+                // Mieux pour des variations boursières/temporelles
+              }
             }
-          }
-        });
-      }
-      update(labels, data) {
-        this.chart.data.labels = labels;
-        this.chart.data.datasets[0].data = data;
-        this.chart.update("none");
-      }
-      destroy() {
-        this.chart.destroy();
+          });
+        }
+        const loader = document.getElementById("app-loader");
+        if (loader) loader.style.display = "none";
       }
     };
   }
 });
 
-// wwwroot/ts/TimeSliderComponent.ts
+// ClientApp/time-slider/TimeSliderComponent.ts
 var TimeSliderComponent;
 var init_TimeSliderComponent = __esm({
-  "wwwroot/ts/TimeSliderComponent.ts"() {
+  "ClientApp/time-slider/TimeSliderComponent.ts"() {
     "use strict";
     init_nouislider();
-    init_TimeSeriesChart();
+    init_ChartManager();
     TimeSliderComponent = class {
       constructor(start, end, data, range) {
         this.start = start;
@@ -16435,25 +16432,44 @@ var init_TimeSliderComponent = __esm({
         this.range = range;
       }
       MS_PER_DAY = 864e5;
-      chart = null;
+      chartManager = null;
       masterApi = null;
       detailApi = null;
       lastMin = -1;
       lastMax = -1;
+      /**
+       * Formatteur pour les tooltips noUiSlider
+       */
       dateFormatter = {
         to: (value) => {
           const d = new Date(Math.round(value) * this.MS_PER_DAY);
-          return d.toLocaleDateString(void 0, { day: "2-digit", month: "short", year: "numeric" });
+          if (window.innerWidth < 600) {
+            return d.toLocaleDateString("fr-FR", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "2-digit"
+            });
+          }
+          return d.toLocaleDateString("fr-FR", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+          });
         },
         from: (value) => new Date(value).getTime() / this.MS_PER_DAY
       };
+      /**
+       * Formatteur pour l'affichage textuel (Accordéon)
+       */
+      formatDateFriendly(dateStr) {
+        const d = new Date(dateStr);
+        return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+      }
       init() {
-        const loader = document.getElementById("app-loader");
         const masterEl = document.getElementById("masterSlider");
         const detailEl = document.getElementById("detailSlider");
-        const chartEl = document.getElementById("chart");
-        if (!masterEl || !detailEl || !chartEl || masterEl.noUiSlider) return;
-        this.chart = new TimeSeriesChart(chartEl);
+        if (!masterEl || !detailEl || masterEl.noUiSlider) return;
+        this.chartManager = new ChartManager("chart");
         const minDay = this.toDay(this.start);
         const maxDay = this.toDay(this.end);
         const detailStart = Math.max(minDay, maxDay - this.range);
@@ -16479,53 +16495,43 @@ var init_TimeSliderComponent = __esm({
           if (sMin === this.lastMin && sMax === this.lastMax) return;
           this.lastMin = sMin;
           this.lastMax = sMax;
-          this.syncData(sMin, sMax);
+          this.syncUI(sMin, sMax);
         });
-        if (this.chart) {
-          setTimeout(() => {
-            loader?.classList.add("spinner-hidden");
-          }, 300);
-        }
-        if (loader) {
-          loader.classList.add("spinner-hidden");
-        }
       }
-      syncData(min, max) {
+      syncUI(min, max) {
         const startDate = new Date(min * this.MS_PER_DAY).toISOString().split("T")[0];
         const endDate = new Date(max * this.MS_PER_DAY).toISOString().split("T")[0];
         const inputS = document.getElementById("filter-start");
         const inputE = document.getElementById("filter-end");
         if (inputS) inputS.value = startDate;
         if (inputE) inputE.value = endDate;
-        const outputEl = document.getElementById("output");
-        if (outputEl) outputEl.innerHTML = `S\xE9lection : <b>${startDate}</b> au <b>${endDate}</b>`;
+        const displayRange = document.getElementById("display-range");
+        if (displayRange) {
+          displayRange.innerHTML = `${this.formatDateFriendly(startDate)} &nbsp;-&nbsp; ${this.formatDateFriendly(endDate)}`;
+        }
         const filtered = this.data.filter((p) => p.t >= startDate && p.t <= endDate);
-        this.chart?.update(filtered.map((d) => d.t), filtered.map((d) => d.v));
+        if (this.chartManager) {
+          this.chartManager.update(filtered);
+        }
       }
       toDay = (d) => Math.floor(new Date(d).getTime() / this.MS_PER_DAY);
     };
   }
 });
 
-// wwwroot/ts/main.ts
+// ClientApp/time-slider/main.ts
 var require_main = __commonJS({
-  "wwwroot/ts/main.ts"() {
+  "ClientApp/time-slider/main.ts"() {
     init_TimeSliderComponent();
     document.addEventListener("DOMContentLoaded", () => {
       const appContainer = document.getElementById("time-slider-app");
-      const btnFilter = document.getElementById("btn-apply-filter");
       if (appContainer) {
         const start = appContainer.dataset.start || "";
         const end = appContainer.dataset.end || "";
         const range = parseInt(appContainer.dataset.range || "60");
-        const data = JSON.parse(appContainer.dataset.points || "[]");
-        const sliderApp = new TimeSliderComponent(start, end, data, range);
+        const initialData = JSON.parse(appContainer.dataset.points || "[]");
+        const sliderApp = new TimeSliderComponent(start, end, initialData, range);
         sliderApp.init();
-        btnFilter?.addEventListener("click", () => {
-          const s = document.getElementById("filter-start").value;
-          const e = document.getElementById("filter-end").value;
-          window.location.href = `/Time/GetFilter?startDate=${s}&endDate=${e}`;
-        });
       }
     });
   }

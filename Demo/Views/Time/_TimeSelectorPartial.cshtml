@@ -1,0 +1,53 @@
+@model Demo.Models.TimeSelectorViewModel
+
+@* On regroupe les metadata dans le conteneur principal pour le JS *@
+<div class="time-form-container" data-min-limit="@Model.StartDate" data-range="@Model.RangeDays">
+
+    <div class="time-nav-grid mb-4 d-flex align-items-center gap-2">
+
+        <button type="button" id="btn-decrement-start"
+                class="btn btn-outline-primary shadow-sm flex-fill d-flex align-items-center justify-content-center">
+            <i class="bi bi-arrow-left-circle me-2"></i>
+            <span class="d-none d-md-inline">Reculer (Début)</span>
+        </button>
+
+        <div class="step-selection-wrapper flex-fill">
+            <select id="stepUnit" class="form-select shadow-sm text-center fw-bold border-primary">
+                <option value="7">7 jours</option>
+                <option value="30" selected>30 jours</option>
+                <option value="90">90 jours</option>
+                <option value="365">1 an</option>
+            </select>
+        </div>
+
+        <button type="button" id="btn-increment-end"
+                class="btn btn-outline-primary shadow-sm flex-fill d-flex align-items-center justify-content-center">
+            <span class="d-none d-md-inline">Avancer (Fin)</span>
+            <i class="bi bi-arrow-right-circle ms-2"></i>
+        </button>
+    </div>
+
+    <div class="time-inputs-grid bg-white p-3 rounded border shadow-sm">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="label-mini text-muted fw-bold small">DATE DE DÉBUT</label>
+                <input type="date" asp-for="StartDate" id="input-start" class="form-control shadow-sm" />
+            </div>
+            <div class="col-md-6">
+                <label class="label-mini text-muted fw-bold small">DATE DE FIN</label>
+                <input type="date" asp-for="EndDate" id="input-end" class="form-control shadow-sm" />
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-3">
+            @* BOUTON RESET : Doit avoir l'ID btn-reset *@
+            <button type="button" id="btn-reset" class="btn btn-outline-secondary px-4 fw-bold shadow-sm">
+                <i class="bi bi-arrow-counterclockwise me-2"></i>RESET
+            </button>
+
+            <button type="button" id="btn-apply-filter" class="btn btn-primary flex-grow-1 fw-bold shadow-sm">
+                <i class="bi bi-check2-circle me-2"></i>APPLIQUER
+            </button>
+        </div>
+    </div>
+</div>

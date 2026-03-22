@@ -5,23 +5,23 @@
     "module": "ESNext",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
 
-    /* Résolution de modules moderne */
+    /* Résolution de modules (Mode Bundler moderne) */
     "moduleResolution": "bundler",
     "moduleDetection": "force",
     "allowImportingTsExtensions": true,
-    
-    /* Strictesse et Qualité */
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+
+    /* Qualité et Strictesse */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
 
-    /* Sortie et Émission */
-    "outDir": "./wwwroot/js",
-    "noEmit": true, // Recommandé si vous utilisez un bundler externe
-    "isolatedModules": true,
-    "resolveJsonModule": true
+    /* Émission déléguée à esbuild */
+    "noEmit": true,
+    "outDir": "./wwwroot/js"
   },
-  "include": ["wwwroot/ts/**/*.ts"]
+  "include": ["ClientApp/**/*.ts"]
 }

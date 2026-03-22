@@ -1,0 +1,50 @@
+/* Conteneur global de la navigation */
+.time-nav-grid {
+    display: grid;
+    /* Les boutons s'adaptent au texte, le centre prend le reste */
+    grid-template-columns: auto 1fr auto; 
+    gap: 15px;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Limitation de la largeur du sélecteur de pas */
+.step-selection-wrapper {
+    max-width: 300px;
+    justify-self: center; /* Centre le sélecteur si l'espace est large */
+    width: 100%;
+}
+
+.time-nav-grid .btn {
+    min-width: 110px; /* Largeur minimale pour accueillir le texte "Reculer/Avancer" */
+    height: 45px;
+    font-weight: 500;
+}
+
+.time-nav-grid .form-select {
+    height: 45px;
+}
+
+/* Grille pour les dates */
+.time-inputs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+/* --- Ajustement Mobile (Smartphone) --- */
+@media (max-width: 576px) {
+    .time-nav-grid {
+        /* On réduit l'espace sur mobile */
+        grid-template-columns: auto 1fr auto;
+        gap: 8px;
+    }
+    
+    .time-nav-grid .btn span {
+        display: none; /* Cache le texte sur mobile pour ne garder que l'icône si trop étroit */
+    }
+    
+    .time-nav-grid .btn {
+        min-width: 45px;
+    }
+}
