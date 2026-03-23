@@ -1,38 +1,44 @@
 import { TimeFormManager } from './time-form';
 
 document.addEventListener('DOMContentLoaded', () => {
-    const app = document.getElementById('time-form-app');
-    const startInput = document.getElementById('input-start') as HTMLInputElement;
-    const endInput = document.getElementById('input-end') as HTMLInputElement;
-    const stepSel = document.getElementById('stepUnit') as HTMLSelectElement;
-    const display = document.getElementById('display-range');
+    const app = document.getElementById('time-form-app'); // Le conteneur racine de la page
+    const partialContainer = document.querySelector('.time-form-container') as HTMLElement;
+    
+    if (!app || !partialContainer) return;
 
-    if (!app || !startInput || !endInput) return;
+    // 1. Extraction des attributs (Noms exacts de ta vue partielle et du parent)
+    const minLimit = partialContainer.getAttribute('data-min-limit') || ""; 
+    const maxLimit = app.getAttribute('data-end') || ""; // On prend la fin max autorisée sur le parent
+    const range = parseInt(partialContainer.getAttribute('data-range') || "60");
+    const points = JSON.parse(app.getAttribute('data-points') || "[]");
 
-    // Initialisation du Manager
-    const manager = new TimeFormManager(app, startInput, endInput, display, stepSel);
+    // Debug pour vérifier les formats reçus
+    console.log("Init Form:", { minLimit, maxLimit, range });
 
-    // Branchement des Listeners
-    document.getElementById('btn-decrement-start')?.addEventListener('click', (e) => {
+    // 2. Initialisation du Manager
+    const manager = new TimeFormManager(partialContainer, minLimit, maxLimit, range, points);
+
+    // 3. Branchement des événements
+    partialContainer.querySelector('#btn-decrement-start')?.addEventListener('click', (e) => {
         e.preventDefault();
-        manager.adjust(true, false); // Start, Decrement
+        manager.adjust(true, false);
     });
 
-    document.getElementById('btn-increment-end')?.addEventListener('click', (e) => {
+    partialContainer.querySelector('#btn-increment-end')?.addEventListener('click', (e) => {
         e.preventDefault();
-        manager.adjust(false, true); // End, Increment
+        manager.adjust(false, true);
     });
 
-    document.getElementById('btn-reset')?.addEventListener('click', (e) => {
+    partialContainer.querySelector('#btn-reset')?.addEventListener('click', (e) => {
         e.preventDefault();
         manager.setToDefault();
     });
 
-    document.getElementById('btn-apply-filter')?.addEventListener('click', (e) => {
+    partialContainer.querySelector('#btn-apply-filter')?.addEventListener('click', (e) => {
         e.preventDefault();
         manager.update();
     });
 
-    // Lancement initial
+    // 4. Lancement initial
     manager.setToDefault();
 });

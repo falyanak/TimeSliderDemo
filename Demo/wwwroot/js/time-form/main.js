@@ -14554,50 +14554,63 @@ var init_time_form = __esm({
     "use strict";
     init_ChartManager();
     TimeFormManager = class {
-      constructor(app, startInput, endInput, display, stepSel) {
-        this.app = app;
-        this.startInput = startInput;
-        this.endInput = endInput;
-        this.display = display;
-        this.stepSel = stepSel;
+      constructor(container, minLimitStr, maxLimitStr, rangeDays, points) {
+        this.container = container;
+        this.minLimitStr = minLimitStr;
+        this.maxLimitStr = maxLimitStr;
+        this.rangeDays = rangeDays;
+        this.points = points;
         this.chart = new ChartManager("chart");
-        this.minLimit = new Date(this.app.dataset.start || "2020-01-01");
-        this.today = /* @__PURE__ */ new Date();
-        this.today.setHours(0, 0, 0, 0);
+        this.minDate = this.parseSafe(this.minLimitStr);
+        this.maxDate = this.parseSafe(this.maxLimitStr);
       }
       chart;
-      minLimit;
-      today;
-      async update() {
-        const fmt = (s) => new Date(s).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
-        if (this.display) {
-          this.display.innerHTML = `${fmt(this.startInput.value)} &nbsp;-&nbsp; ${fmt(this.endInput.value)}`;
-        }
-        const res = await fetch(`/Time/GetData?start=${this.startInput.value}&end=${this.endInput.value}`);
-        this.chart.update(await res.json());
+      minDate;
+      maxDate;
+      parseSafe(s) {
+        const d = new Date(s);
+        return isNaN(d.getTime()) ? /* @__PURE__ */ new Date() : d;
+      }
+      toISO(d) {
+        return d.toISOString().split("T")[0];
       }
       setToDefault() {
-        const range = parseInt(this.app.dataset.range || "60");
-        const now = new Date(this.today);
-        this.endInput.value = now.toISOString().split("T")[0];
-        now.setDate(now.getDate() - range);
-        this.startInput.value = (now < this.minLimit ? this.minLimit : now).toISOString().split("T")[0];
+        const startInput = this.container.querySelector("#input-start");
+        const endInput = this.container.querySelector("#input-end");
+        if (!startInput || !endInput) return;
+        const dateEnd = new Date(this.maxDate.getTime());
+        endInput.value = this.toISO(dateEnd);
+        const dateStart = new Date(dateEnd.getTime());
+        dateStart.setDate(dateStart.getDate() - this.rangeDays);
+        const finalStart = dateStart < this.minDate ? this.minDate : dateStart;
+        startInput.value = this.toISO(finalStart);
         this.update();
       }
-      adjust(isStart, isIncrement) {
-        const input = isStart ? this.startInput : this.endInput;
-        const step = parseInt(this.stepSel.value) || 1;
-        const delta = isIncrement ? step : -step;
-        let d = new Date(input.value);
-        d.setDate(d.getDate() + delta);
-        if (isStart) {
-          if (d < this.minLimit) d = this.minLimit;
-          if (d > new Date(this.endInput.value)) d = new Date(this.endInput.value);
-        } else {
-          if (d > this.today) d = this.today;
-          if (d < new Date(this.startInput.value)) d = new Date(this.startInput.value);
+      update() {
+        const startInput = this.container.querySelector("#input-start");
+        const endInput = this.container.querySelector("#input-end");
+        const display = document.getElementById("display-range");
+        if (!startInput || !endInput) return;
+        const s = startInput.value;
+        const e = endInput.value;
+        if (display) {
+          const fmt = (val) => new Date(val).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+          display.innerHTML = `${fmt(s)} &nbsp;-&nbsp; ${fmt(e)}`;
         }
-        input.value = d.toISOString().split("T")[0];
+        const filtered = this.points.filter((p) => p.t >= s && p.t <= e);
+        this.chart.update(filtered);
+      }
+      adjust(isStart, isIncrement) {
+        const input = this.container.querySelector(isStart ? "#input-start" : "#input-end");
+        const stepSel = this.container.querySelector("#stepUnit");
+        if (!input) return;
+        const step = parseInt(stepSel?.value || "1");
+        const date = new Date(input.value);
+        if (isNaN(date.getTime())) return;
+        date.setDate(date.getDate() + (isIncrement ? step : -step));
+        if (date < this.minDate) date.setTime(this.minDate.getTime());
+        if (date > this.maxDate) date.setTime(this.maxDate.getTime());
+        input.value = this.toISO(date);
         this.update();
       }
     };
@@ -14610,25 +14623,27 @@ var require_main = __commonJS({
     init_time_form();
     document.addEventListener("DOMContentLoaded", () => {
       const app = document.getElementById("time-form-app");
-      const startInput = document.getElementById("input-start");
-      const endInput = document.getElementById("input-end");
-      const stepSel = document.getElementById("stepUnit");
-      const display = document.getElementById("display-range");
-      if (!app || !startInput || !endInput) return;
-      const manager = new TimeFormManager(app, startInput, endInput, display, stepSel);
-      document.getElementById("btn-decrement-start")?.addEventListener("click", (e) => {
+      const partialContainer = document.querySelector(".time-form-container");
+      if (!app || !partialContainer) return;
+      const minLimit = partialContainer.getAttribute("data-min-limit") || "";
+      const maxLimit = app.getAttribute("data-end") || "";
+      const range = parseInt(partialContainer.getAttribute("data-range") || "60");
+      const points = JSON.parse(app.getAttribute("data-points") || "[]");
+      console.log("Init Form:", { minLimit, maxLimit, range });
+      const manager = new TimeFormManager(partialContainer, minLimit, maxLimit, range, points);
+      partialContainer.querySelector("#btn-decrement-start")?.addEventListener("click", (e) => {
         e.preventDefault();
         manager.adjust(true, false);
       });
-      document.getElementById("btn-increment-end")?.addEventListener("click", (e) => {
+      partialContainer.querySelector("#btn-increment-end")?.addEventListener("click", (e) => {
         e.preventDefault();
         manager.adjust(false, true);
       });
-      document.getElementById("btn-reset")?.addEventListener("click", (e) => {
+      partialContainer.querySelector("#btn-reset")?.addEventListener("click", (e) => {
         e.preventDefault();
         manager.setToDefault();
       });
-      document.getElementById("btn-apply-filter")?.addEventListener("click", (e) => {
+      partialContainer.querySelector("#btn-apply-filter")?.addEventListener("click", (e) => {
         e.preventDefault();
         manager.update();
       });
