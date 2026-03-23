@@ -22,9 +22,6 @@ export class TimeSliderComponent {
         private readonly range: number
     ) { }
 
-    /**
-     * Formateur pour les tooltips du slider
-     */
     private readonly dateFormatter = {
         to: (value: number): string => {
             const d = new Date(Math.round(value) * this.MS_PER_DAY);
@@ -36,9 +33,6 @@ export class TimeSliderComponent {
         from: (value: string): number => new Date(value).getTime() / this.MS_PER_DAY
     };
 
-    /**
-     * Formate une date ISO en format lisible (ex: 25 oct. 2023)
-     */
     private formatDateFriendly(dateStr: string): string {
         const d = new Date(dateStr);
         return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -63,19 +57,28 @@ export class TimeSliderComponent {
             range: { min: minDay, max: maxDay }
         };
 
+        // Création initiale
         noUiSlider.create(masterEl, { ...config, start: [minDay, maxDay] });
         noUiSlider.create(detailEl, { ...config, start: [detailStart, maxDay] });
 
         this.masterApi = (masterEl as any).noUiSlider as API;
         this.detailApi = (detailEl as any).noUiSlider as API;
 
+        // Synchronisation : Master définit le cadre du Détail
         this.masterApi.on("slide", (vals) => {
-            const mMax = Math.round(Number(vals[1]));
             const mMin = Math.round(Number(vals[0]));
-            this.detailApi?.updateOptions({ range: { min: mMin, max: mMax } }, false);
-            this.detailApi?.set([Math.max(mMin, mMax - this.range), mMax]);
+            const mMax = Math.round(Number(vals[1]));
+
+            // On met à jour le "rail" du détail
+            this.detailApi?.updateOptions({ 
+                range: { min: mMin, max: mMax } 
+            }, false);
+
+            // On force les poignées du détail à l'origine (mMin) et à la fin (mMax)
+            this.detailApi?.set([mMin, mMax]);
         });
 
+        // Mise à jour du graphique et de l'UI (avec anti-rebond)
         this.detailApi.on("update", (vals) => {
             const sMin = Math.round(Number(vals[0]));
             const sMax = Math.round(Number(vals[1]));
@@ -85,37 +88,25 @@ export class TimeSliderComponent {
             this.lastMin = sMin; 
             this.lastMax = sMax;
 
-            // Mise à jour visuelle immédiate des dates
             this.updateTextInputs(sMin, sMax);
-
-            // Mise à jour différée du graphique avec loader
             this.debouncedSync(sMin, sMax);
         });
 
         this.bindReset();
     }
 
-    /**
-     * Gère l'affichage du loader et la mise à jour du graphique
-     */
     private debouncedSync(min: number, max: number): void {
         if (this.debounceTimer) window.clearTimeout(this.debounceTimer);
 
         this.debounceTimer = window.setTimeout(() => {
             this.loader.show();
-            
-            // On laisse 50ms pour que le navigateur affiche le loader
             setTimeout(() => {
                 this.syncChart(min, max);
                 this.loader.hide();
             }, 50);
-            
         }, 250); 
     }
 
-    /**
-     * Met à jour les inputs et le label de plage de dates (Instantané)
-     */
     private updateTextInputs(min: number, max: number): void {
         const startDate = new Date(min * this.MS_PER_DAY).toISOString().split('T')[0];
         const endDate = new Date(max * this.MS_PER_DAY).toISOString().split('T')[0];
@@ -132,9 +123,6 @@ export class TimeSliderComponent {
         }
     }
 
-    /**
-     * Filtre les données et met à jour le ChartManager (Lourd)
-     */
     private syncChart(min: number, max: number): void {
         const startDate = new Date(min * this.MS_PER_DAY).toISOString().split('T')[0];
         const endDate = new Date(max * this.MS_PER_DAY).toISOString().split('T')[0];

@@ -16512,9 +16512,6 @@ var init_TimeSliderComponent = __esm({
       lastMax = -1;
       debounceTimer = null;
       loader = LoaderManager.getInstance();
-      /**
-       * Formateur pour les tooltips du slider
-       */
       dateFormatter = {
         to: (value) => {
           const d = new Date(Math.round(value) * this.MS_PER_DAY);
@@ -16525,9 +16522,6 @@ var init_TimeSliderComponent = __esm({
         },
         from: (value) => new Date(value).getTime() / this.MS_PER_DAY
       };
-      /**
-       * Formate une date ISO en format lisible (ex: 25 oct. 2023)
-       */
       formatDateFriendly(dateStr) {
         const d = new Date(dateStr);
         return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
@@ -16551,10 +16545,12 @@ var init_TimeSliderComponent = __esm({
         this.masterApi = masterEl.noUiSlider;
         this.detailApi = detailEl.noUiSlider;
         this.masterApi.on("slide", (vals) => {
-          const mMax = Math.round(Number(vals[1]));
           const mMin = Math.round(Number(vals[0]));
-          this.detailApi?.updateOptions({ range: { min: mMin, max: mMax } }, false);
-          this.detailApi?.set([Math.max(mMin, mMax - this.range), mMax]);
+          const mMax = Math.round(Number(vals[1]));
+          this.detailApi?.updateOptions({
+            range: { min: mMin, max: mMax }
+          }, false);
+          this.detailApi?.set([mMin, mMax]);
         });
         this.detailApi.on("update", (vals) => {
           const sMin = Math.round(Number(vals[0]));
@@ -16567,9 +16563,6 @@ var init_TimeSliderComponent = __esm({
         });
         this.bindReset();
       }
-      /**
-       * Gère l'affichage du loader et la mise à jour du graphique
-       */
       debouncedSync(min, max) {
         if (this.debounceTimer) window.clearTimeout(this.debounceTimer);
         this.debounceTimer = window.setTimeout(() => {
@@ -16580,9 +16573,6 @@ var init_TimeSliderComponent = __esm({
           }, 50);
         }, 250);
       }
-      /**
-       * Met à jour les inputs et le label de plage de dates (Instantané)
-       */
       updateTextInputs(min, max) {
         const startDate = new Date(min * this.MS_PER_DAY).toISOString().split("T")[0];
         const endDate = new Date(max * this.MS_PER_DAY).toISOString().split("T")[0];
@@ -16595,9 +16585,6 @@ var init_TimeSliderComponent = __esm({
           displayRange.innerHTML = `${this.formatDateFriendly(startDate)} &nbsp;-&nbsp; ${this.formatDateFriendly(endDate)}`;
         }
       }
-      /**
-       * Filtre les données et met à jour le ChartManager (Lourd)
-       */
       syncChart(min, max) {
         const startDate = new Date(min * this.MS_PER_DAY).toISOString().split("T")[0];
         const endDate = new Date(max * this.MS_PER_DAY).toISOString().split("T")[0];
