@@ -11,10 +11,19 @@
     position: relative !important;
 }
 
+/* Le conteneur qui contient le bouton ET les sliders */
+.time-slider-container {
+    position: relative !important;
+    padding-top: 50px !important; /* Crée l'espace nécessaire pour le bouton */
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 20px;
+    background: #f8f9fa;
+}
 /* --- Bouton Reset (Haut à droite, sans décalage) --- */
 .btn-reset-top {
     position: absolute !important;
-    top: 15px !important;
+    top: 5px !important;
     right: 15px !important;
     background: #ffffff !important;
     border: 1px solid #dee2e6 !important;
@@ -48,7 +57,7 @@
     color: #495057;
     text-transform: uppercase;
     letter-spacing: 0.8px;
-    margin-bottom: 45px !important; 
+    margin-bottom: 25px !important; 
 }
 
 /* --- noUiSlider : Track & Connect (Uniforme 10px) --- */
