@@ -57,6 +57,20 @@
     margin-bottom: 1px;
 }
 
+/* style du badge */
+#date-error-badge {
+    font-size: 0.8rem;
+    padding: 8px;
+    border-radius: 4px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+
 @media (max-width: 576px) {
     .btn-nav { min-width: 75px; font-size: 0.7rem !important; }
     #stepUnit { width: 85px !important; }
