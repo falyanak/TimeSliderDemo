@@ -4,7 +4,6 @@
     ViewData["Title"] = "Analyse Temporelle";
 }
 
-
 <link rel="stylesheet" href="~/lib/nouislider/nouislider.min.css" />
 <link rel="stylesheet" href="~/css/time-slider.css" asp-append-version="true" />
 
@@ -13,53 +12,55 @@
 <div id="time-slider-app" data-start="@Model.StartDate" data-end="@Model.EndDate" data-points='@Model.JsonData'
      data-range="@Model.RangeDays" class="container mt-3">
 
-    <div class="accordion shadow-sm mb-4" id="timeSelectionAccordion">
-        <div class="accordion-item shadow-none border-0">
-            <h2 class="accordion-header" id="headingTime">
-                @* Utilisation de d-flex pour centrer la période entre l'icône et le chevron *@
-                <button class="accordion-button fw-bold d-flex align-items-center" type="button"
-                        data-bs-toggle="collapse" data-bs-target="#collapseTime" aria-expanded="true">
 
-                    <i class="bi bi-calendar3 text-primary"></i>
+<div class="accordion shadow-sm mb-4" id="timeSelectionAccordion">
+    <div class="accordion-item shadow-none border-0">
+        <h2 class="accordion-header" id="headingTime">
+            @* Utilisation de d-flex pour centrer la période entre l'icône et le chevron *@
+            <button class="accordion-button fw-bold d-flex align-items-center" type="button"                       data-bs-toggle="collapse"
+                    data-bs-target="#collapseTime" aria-expanded="true">
 
-                    @* Ce div occupe tout l'espace et centre son contenu *@
-                    <div class="flex-grow-1 text-center px-2">
-                        <span class="d-none d-sm-inline text-muted fw-normal">Période : </span>
-                        @* Mis à jour dynamiquement par TimeSliderComponent.ts via l'ID display-range *@
-                        <strong class="ms-1 text-dark" id="display-range">
-                            @DateTime.Parse(Model.StartDate).ToString("dd MMM yyyy") -
-                            @DateTime.Parse(Model.EndDate).ToString("dd MMM yyyy")
-                        </strong>
-                    </div>
+                <i class="bi bi-calendar3 text-primary"></i>
 
-                </button>
-            </h2>
-
-            <div id="collapseTime" class="accordion-collapse collapse show" data-bs-parent="#timeSelectionAccordion">
-                <div class="accordion-body bg-light border-top">
-                    <div id="slider-interface">
-                        <partial name="_TimeSlidersPartial" model="Model" />
-                    </div>
+                @* Ce div occupe tout l'espace et centre son contenu *@
+                <div class="flex-grow-1 text-center px-2">
+                    <span class="d-none d-sm-inline text-muted fw-normal">Période : </span>
+                    @* Mis à jour dynamiquement par TimeSliderComponent.ts via l'ID display-range *@
+                    <strong class="ms-1 text-dark" id="display-range">
+                        @DateTime.Parse(Model.StartDate).ToString("dd MMM yyyy") -
+                        @DateTime.Parse(Model.EndDate).ToString("dd MMM yyyy")
+                    </strong>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    @* Zone Graphique *@
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-2 p-md-4">
-            <div class="chart-container" style="position: relative; height: 400px; width: 100%;">
-                @* Le loader est masqué par le ChartManager une fois les données injectées *@
-                <div id="app-loader" class="spinner-wrapper">
-                    <div class="custom-spinner"></div>
+            </button>
+        </h2>
+
+        <div id="collapseTime" class="accordion-collapse collapse show" data-bs-parent="#timeSelectionAccordion">
+            <div class="accordion-body bg-light border-top">
+                <div id="slider-interface">
+                    <partial name="_TimeSlidersPartial" model="Model" />
                 </div>
-                <canvas id="chart"></canvas>
             </div>
         </div>
     </div>
 </div>
 
+@* Zone Graphique *@
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-2 p-md-4">
+            <div class="chart-container" style="position: relative; height: 400px; width: 100%;">
+                @* Le canvas occupe tout l'espace, le loader est géré globalement par le Layout *@
+                <canvas id="chart"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+
 @section Scripts {
+@* 
+    <script src="~/lib/nouislider/nouislider.js"></script> *@
+
     @* 1. Bibliothèque de base *@
     <script src="~/lib/chartjs/chart.umd.js"></script>
 

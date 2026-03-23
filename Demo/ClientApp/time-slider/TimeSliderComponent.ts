@@ -1,5 +1,6 @@
 import noUiSlider, { API } from "nouislider";
 import { ChartManager } from "../shared/ChartManager";
+import { LoaderManager } from '../shared/LoaderManager';
 
 interface TimePoint { t: string; v: number; }
 
@@ -10,6 +11,9 @@ export class TimeSliderComponent {
     private detailApi: API | null = null;
     private lastMin: number = -1;
     private lastMax: number = -1;
+    
+    private debounceTimer: number | null = null;
+    private loader = LoaderManager.getInstance();
 
     constructor(
         private readonly start: string,
@@ -18,6 +22,9 @@ export class TimeSliderComponent {
         private readonly range: number
     ) { }
 
+    /**
+     * Formateur pour les tooltips du slider
+     */
     private readonly dateFormatter = {
         to: (value: number): string => {
             const d = new Date(Math.round(value) * this.MS_PER_DAY);
@@ -29,6 +36,9 @@ export class TimeSliderComponent {
         from: (value: string): number => new Date(value).getTime() / this.MS_PER_DAY
     };
 
+    /**
+     * Formate une date ISO en format lisible (ex: 25 oct. 2023)
+     */
     private formatDateFriendly(dateStr: string): string {
         const d = new Date(dateStr);
         return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -59,7 +69,6 @@ export class TimeSliderComponent {
         this.masterApi = (masterEl as any).noUiSlider as API;
         this.detailApi = (detailEl as any).noUiSlider as API;
 
-        // Master pilote le Range du Detail
         this.masterApi.on("slide", (vals) => {
             const mMax = Math.round(Number(vals[1]));
             const mMin = Math.round(Number(vals[0]));
@@ -67,62 +76,53 @@ export class TimeSliderComponent {
             this.detailApi?.set([Math.max(mMin, mMax - this.range), mMax]);
         });
 
-        // Detail pilote les données et l'affichage
         this.detailApi.on("update", (vals) => {
             const sMin = Math.round(Number(vals[0]));
             const sMax = Math.round(Number(vals[1]));
+            
             if (sMin === this.lastMin && sMax === this.lastMax) return;
+            
             this.lastMin = sMin; 
             this.lastMax = sMax;
-            this.syncUI(sMin, sMax);
+
+            // Mise à jour visuelle immédiate des dates
+            this.updateTextInputs(sMin, sMax);
+
+            // Mise à jour différée du graphique avec loader
+            this.debouncedSync(sMin, sMax);
         });
 
         this.bindReset();
     }
 
-/**
-     * Réinitialise les sliders selon la logique du formulaire (End - Range)
+    /**
+     * Gère l'affichage du loader et la mise à jour du graphique
      */
-    private bindReset(): void {
-        const resetBtn = document.getElementById('btn-reset-slider');
-        if (!resetBtn) return;
+    private debouncedSync(min: number, max: number): void {
+        if (this.debounceTimer) window.clearTimeout(this.debounceTimer);
 
-        resetBtn.addEventListener('click', () => {
-            // 1. Bornes absolues autorisées (définies à l'init)
-            const minLimitDay = this.toDay(this.start);
-            const maxLimitDay = this.toDay(this.end);
-
-            // 2. Calcul de la sélection par défaut (Date de fin - Range)
-            // On reproduit exactement : now.setDate(now.getDate() - range)
-            const defaultStartDay = maxLimitDay - this.range;
+        this.debounceTimer = window.setTimeout(() => {
+            this.loader.show();
             
-            // On applique la sécurité : (now < this.minLimit ? this.minLimit : now)
-            const finalStartDay = defaultStartDay < minLimitDay ? minLimitDay : defaultStartDay;
-
-            // 3. Application au Master (Vue Totale)
-            if (this.masterApi) {
-                this.masterApi.set([minLimitDay, maxLimitDay]);
-            }
-
-            // 4. Application au Detail (Vue Fenêtrée)
-            if (this.detailApi) {
-                // On restaure d'abord le range complet pour permettre le positionnement
-                this.detailApi.updateOptions({
-                    range: { min: minLimitDay, max: maxLimitDay }
-                }, false);
-                
-                // On positionne les poignées sur la période calculée
-                this.detailApi.set([finalStartDay, maxLimitDay]);
-            }
-        });
+            // On laisse 50ms pour que le navigateur affiche le loader
+            setTimeout(() => {
+                this.syncChart(min, max);
+                this.loader.hide();
+            }, 50);
+            
+        }, 250); 
     }
 
-    private syncUI(min: number, max: number): void {
+    /**
+     * Met à jour les inputs et le label de plage de dates (Instantané)
+     */
+    private updateTextInputs(min: number, max: number): void {
         const startDate = new Date(min * this.MS_PER_DAY).toISOString().split('T')[0];
         const endDate = new Date(max * this.MS_PER_DAY).toISOString().split('T')[0];
 
         const inputS = document.getElementById("filter-start") as HTMLInputElement;
         const inputE = document.getElementById("filter-end") as HTMLInputElement;
+        
         if (inputS) inputS.value = startDate;
         if (inputE) inputE.value = endDate;
 
@@ -130,11 +130,40 @@ export class TimeSliderComponent {
         if (displayRange) {
             displayRange.innerHTML = `${this.formatDateFriendly(startDate)} &nbsp;-&nbsp; ${this.formatDateFriendly(endDate)}`;
         }
+    }
+
+    /**
+     * Filtre les données et met à jour le ChartManager (Lourd)
+     */
+    private syncChart(min: number, max: number): void {
+        const startDate = new Date(min * this.MS_PER_DAY).toISOString().split('T')[0];
+        const endDate = new Date(max * this.MS_PER_DAY).toISOString().split('T')[0];
 
         const filtered = this.data.filter(p => p.t >= startDate && p.t <= endDate);
         if (this.chartManager) {
             this.chartManager.update(filtered);
         }
+    }
+
+    private bindReset(): void {
+        const resetBtn = document.getElementById('btn-reset-slider');
+        if (!resetBtn) return;
+
+        resetBtn.addEventListener('click', () => {
+            this.loader.show();
+            
+            const minLimitDay = this.toDay(this.start);
+            const maxLimitDay = this.toDay(this.end);
+            const finalStartDay = Math.max(minLimitDay, maxLimitDay - this.range);
+
+            if (this.masterApi) this.masterApi.set([minLimitDay, maxLimitDay]);
+            if (this.detailApi) {
+                this.detailApi.updateOptions({ range: { min: minLimitDay, max: maxLimitDay } }, false);
+                this.detailApi.set([finalStartDay, maxLimitDay]);
+            }
+
+            setTimeout(() => this.loader.hide(), 300);
+        });
     }
 
     private toDay = (d: string): number => Math.floor(new Date(d).getTime() / this.MS_PER_DAY);

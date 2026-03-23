@@ -16361,58 +16361,129 @@ var init_chart = __esm({
   }
 });
 
+// ClientApp/shared/LoaderManager.ts
+var LoaderManager;
+var init_LoaderManager = __esm({
+  "ClientApp/shared/LoaderManager.ts"() {
+    "use strict";
+    LoaderManager = class _LoaderManager {
+      static instance;
+      loader;
+      activeRequests = 0;
+      // Compteur pour gérer les appels simultanés
+      constructor() {
+        this.loader = document.getElementById("app-loader");
+      }
+      static getInstance() {
+        if (!_LoaderManager.instance) {
+          _LoaderManager.instance = new _LoaderManager();
+        }
+        return _LoaderManager.instance;
+      }
+      /**
+       * Affiche le loader. 
+       * Utilise un compteur pour éviter qu'un composant cache le loader 
+       * alors qu'un autre en a encore besoin.
+       */
+      show() {
+        this.activeRequests++;
+        if (this.loader) {
+          this.loader.classList.remove("spinner-hidden");
+        }
+      }
+      /**
+       * Cache le loader avec un léger délai pour éviter les flashs visuels.
+       */
+      hide(force = false) {
+        if (force) this.activeRequests = 0;
+        else this.activeRequests--;
+        if (this.activeRequests <= 0) {
+          this.activeRequests = 0;
+          setTimeout(() => {
+            if (this.activeRequests === 0) {
+              this.loader?.classList.add("spinner-hidden");
+            }
+          }, 200);
+        }
+      }
+      /**
+       * Méthode de test simplifiée
+       */
+      test(duration = 3e3) {
+        this.show();
+        setTimeout(() => this.hide(), duration);
+      }
+    };
+  }
+});
+
 // ClientApp/shared/ChartManager.ts
 var ChartManager;
 var init_ChartManager = __esm({
   "ClientApp/shared/ChartManager.ts"() {
     "use strict";
     init_chart();
+    init_LoaderManager();
     Chart.register(...registerables);
     ChartManager = class {
       constructor(canvasId) {
         this.canvasId = canvasId;
-        this.loader = document.getElementById("app-loader");
       }
       chart = null;
-      loader;
+      loader = LoaderManager.getInstance();
+      /**
+      * Met à jour le graphique avec un délai simulé pour tester le loader
+      * @param data Tableau d'objets { t: string, v: number }
+      */
       update(data) {
-        if (this.loader) this.loader.style.display = "flex";
+        if (!this.loader) return;
+        this.loader.show();
         const labels = data.map((p) => p.t);
         const values = data.map((p) => p.v);
         if (!this.chart) {
-          const ctx = document.getElementById(this.canvasId);
-          if (!ctx) return;
-          this.chart = new Chart(ctx, {
-            type: "line",
-            data: {
-              labels,
-              datasets: [{
-                data: values,
-                borderColor: "#0d6efd",
-                backgroundColor: "rgba(13, 110, 253, 0.05)",
-                fill: true,
-                tension: 0.3,
-                pointRadius: 0
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: { legend: { display: false } },
-              scales: {
-                x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
-                y: { beginAtZero: true }
-              }
-            }
-          });
+          this.createChart(labels, values);
         } else {
           this.chart.data.labels = labels;
           this.chart.data.datasets[0].data = values;
           this.chart.update("none");
         }
-        setTimeout(() => {
-          if (this.loader) this.loader.style.display = "none";
-        }, 150);
+        this.loader.hide();
+      }
+      createChart(labels, values) {
+        const canvas = document.getElementById(this.canvasId);
+        if (!canvas) return;
+        this.chart = new Chart(canvas, {
+          type: "line",
+          data: {
+            labels,
+            datasets: [{
+              data: values,
+              borderColor: "#0d6efd",
+              backgroundColor: "rgba(13, 110, 253, 0.05)",
+              fill: true,
+              tension: 0.3,
+              pointRadius: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
+              y: { beginAtZero: true }
+            }
+          }
+        });
+      }
+      /**
+       * Permet de détruire le graphique proprement si nécessaire (changement de page/vue)
+       */
+      destroy() {
+        if (this.chart) {
+          this.chart.destroy();
+          this.chart = null;
+        }
       }
     };
   }
@@ -16425,6 +16496,7 @@ var init_TimeSliderComponent = __esm({
     "use strict";
     init_nouislider();
     init_ChartManager();
+    init_LoaderManager();
     TimeSliderComponent = class {
       constructor(start, end, data, range) {
         this.start = start;
@@ -16438,6 +16510,11 @@ var init_TimeSliderComponent = __esm({
       detailApi = null;
       lastMin = -1;
       lastMax = -1;
+      debounceTimer = null;
+      loader = LoaderManager.getInstance();
+      /**
+       * Formateur pour les tooltips du slider
+       */
       dateFormatter = {
         to: (value) => {
           const d = new Date(Math.round(value) * this.MS_PER_DAY);
@@ -16448,6 +16525,9 @@ var init_TimeSliderComponent = __esm({
         },
         from: (value) => new Date(value).getTime() / this.MS_PER_DAY
       };
+      /**
+       * Formate une date ISO en format lisible (ex: 25 oct. 2023)
+       */
       formatDateFriendly(dateStr) {
         const d = new Date(dateStr);
         return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
@@ -16482,33 +16562,28 @@ var init_TimeSliderComponent = __esm({
           if (sMin === this.lastMin && sMax === this.lastMax) return;
           this.lastMin = sMin;
           this.lastMax = sMax;
-          this.syncUI(sMin, sMax);
+          this.updateTextInputs(sMin, sMax);
+          this.debouncedSync(sMin, sMax);
         });
         this.bindReset();
       }
       /**
-           * Réinitialise les sliders selon la logique du formulaire (End - Range)
-           */
-      bindReset() {
-        const resetBtn = document.getElementById("btn-reset-slider");
-        if (!resetBtn) return;
-        resetBtn.addEventListener("click", () => {
-          const minLimitDay = this.toDay(this.start);
-          const maxLimitDay = this.toDay(this.end);
-          const defaultStartDay = maxLimitDay - this.range;
-          const finalStartDay = defaultStartDay < minLimitDay ? minLimitDay : defaultStartDay;
-          if (this.masterApi) {
-            this.masterApi.set([minLimitDay, maxLimitDay]);
-          }
-          if (this.detailApi) {
-            this.detailApi.updateOptions({
-              range: { min: minLimitDay, max: maxLimitDay }
-            }, false);
-            this.detailApi.set([finalStartDay, maxLimitDay]);
-          }
-        });
+       * Gère l'affichage du loader et la mise à jour du graphique
+       */
+      debouncedSync(min, max) {
+        if (this.debounceTimer) window.clearTimeout(this.debounceTimer);
+        this.debounceTimer = window.setTimeout(() => {
+          this.loader.show();
+          setTimeout(() => {
+            this.syncChart(min, max);
+            this.loader.hide();
+          }, 50);
+        }, 250);
       }
-      syncUI(min, max) {
+      /**
+       * Met à jour les inputs et le label de plage de dates (Instantané)
+       */
+      updateTextInputs(min, max) {
         const startDate = new Date(min * this.MS_PER_DAY).toISOString().split("T")[0];
         const endDate = new Date(max * this.MS_PER_DAY).toISOString().split("T")[0];
         const inputS = document.getElementById("filter-start");
@@ -16519,10 +16594,33 @@ var init_TimeSliderComponent = __esm({
         if (displayRange) {
           displayRange.innerHTML = `${this.formatDateFriendly(startDate)} &nbsp;-&nbsp; ${this.formatDateFriendly(endDate)}`;
         }
+      }
+      /**
+       * Filtre les données et met à jour le ChartManager (Lourd)
+       */
+      syncChart(min, max) {
+        const startDate = new Date(min * this.MS_PER_DAY).toISOString().split("T")[0];
+        const endDate = new Date(max * this.MS_PER_DAY).toISOString().split("T")[0];
         const filtered = this.data.filter((p) => p.t >= startDate && p.t <= endDate);
         if (this.chartManager) {
           this.chartManager.update(filtered);
         }
+      }
+      bindReset() {
+        const resetBtn = document.getElementById("btn-reset-slider");
+        if (!resetBtn) return;
+        resetBtn.addEventListener("click", () => {
+          this.loader.show();
+          const minLimitDay = this.toDay(this.start);
+          const maxLimitDay = this.toDay(this.end);
+          const finalStartDay = Math.max(minLimitDay, maxLimitDay - this.range);
+          if (this.masterApi) this.masterApi.set([minLimitDay, maxLimitDay]);
+          if (this.detailApi) {
+            this.detailApi.updateOptions({ range: { min: minLimitDay, max: maxLimitDay } }, false);
+            this.detailApi.set([finalStartDay, maxLimitDay]);
+          }
+          setTimeout(() => this.loader.hide(), 300);
+        });
       }
       toDay = (d) => Math.floor(new Date(d).getTime() / this.MS_PER_DAY);
     };

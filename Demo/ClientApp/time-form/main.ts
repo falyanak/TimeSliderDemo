@@ -1,13 +1,13 @@
-import { TimeFormManager } from './time-form';
+import { TimeFormManager } from './TimeFormManager';
 
 document.addEventListener('DOMContentLoaded', () => {
     const app = document.getElementById('time-form-app');
     const partialContainer = document.querySelector('.time-form-container') as HTMLElement;
-    
+
     if (!app || !partialContainer) return;
 
-    const minLimit = partialContainer.getAttribute('data-min-limit') || ""; 
-    const maxLimit = app.getAttribute('data-end') || ""; 
+    const minLimit = partialContainer.getAttribute('data-min-limit') || "";
+    const maxLimit = app.getAttribute('data-end') || "";
     const range = parseInt(partialContainer.getAttribute('data-range') || "60");
     const pointsRaw = app.getAttribute('data-points') || "[]";
 

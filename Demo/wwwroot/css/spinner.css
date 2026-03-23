@@ -1,36 +1,46 @@
-/* Conteneur pour centrer le spinner sur le graphique */
-.spinner-wrapper {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 100;
-    transition: opacity 0.4s ease-out, visibility 0.4s;
+/* spinner.css */
+
+/* État de base du loader : masqué par défaut */
+#app-loader {
+    display: none; /* Sécurité initiale */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-out;
 }
 
-/* Le Spinner (Cercle animé) */
+/* État actif (quand on retire .spinner-hidden ou qu'on ajoute une classe active) */
+#app-loader.spinner-wrapper {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex !important; /* Force l'affichage flex pour le centrage */
+    justify-content: center;
+    align-items: center;
+    z-index: 99999;
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Classe de masquage pilotée par le JS */
+#app-loader.spinner-hidden {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+}
+
 .custom-spinner {
-    width: 50px;
-    height: 50px;
-    border: 5px solid #e5e7eb;
-    border-top: 5px solid #2563eb; /* Bleu primaire */
+    width: 60px;
+    height: 60px;
+    border: 6px solid #f3f4f6;
+    border-top: 6px solid #0d6efd;
     border-radius: 50%;
     animation: spin-animation 1s linear infinite;
 }
 
-/* Animation de rotation */
 @keyframes spin-animation {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-}
-
-/* Classe de sortie pour le TypeScript */
-.spinner-hidden {
-    opacity: 0;
-    visibility: hidden;
 }

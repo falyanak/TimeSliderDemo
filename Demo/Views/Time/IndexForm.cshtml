@@ -48,17 +48,16 @@
     </div>
 
     @* Zone Graphique *@
+
     <div class="card shadow-sm border-0">
         <div class="card-body p-2 p-md-4">
             <div class="chart-container" style="position: relative; height: 400px; width: 100%;">
-                @* Le loader est masqué par le ChartManager une fois les données traitées *@
-                <div id="app-loader" class="spinner-wrapper">
-                    <div class="custom-spinner"></div>
-                </div>
+                @* Le canvas occupe tout l'espace, le loader est géré globalement par le Layout *@
                 <canvas id="chart"></canvas>
             </div>
         </div>
     </div>
+
 </div>
 
 @section Scripts {

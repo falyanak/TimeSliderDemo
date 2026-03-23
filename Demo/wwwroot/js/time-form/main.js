@@ -14491,69 +14491,141 @@ var init_chart = __esm({
   }
 });
 
+// ClientApp/shared/LoaderManager.ts
+var LoaderManager;
+var init_LoaderManager = __esm({
+  "ClientApp/shared/LoaderManager.ts"() {
+    "use strict";
+    LoaderManager = class _LoaderManager {
+      static instance;
+      loader;
+      activeRequests = 0;
+      // Compteur pour gérer les appels simultanés
+      constructor() {
+        this.loader = document.getElementById("app-loader");
+      }
+      static getInstance() {
+        if (!_LoaderManager.instance) {
+          _LoaderManager.instance = new _LoaderManager();
+        }
+        return _LoaderManager.instance;
+      }
+      /**
+       * Affiche le loader. 
+       * Utilise un compteur pour éviter qu'un composant cache le loader 
+       * alors qu'un autre en a encore besoin.
+       */
+      show() {
+        this.activeRequests++;
+        if (this.loader) {
+          this.loader.classList.remove("spinner-hidden");
+        }
+      }
+      /**
+       * Cache le loader avec un léger délai pour éviter les flashs visuels.
+       */
+      hide(force = false) {
+        if (force) this.activeRequests = 0;
+        else this.activeRequests--;
+        if (this.activeRequests <= 0) {
+          this.activeRequests = 0;
+          setTimeout(() => {
+            if (this.activeRequests === 0) {
+              this.loader?.classList.add("spinner-hidden");
+            }
+          }, 200);
+        }
+      }
+      /**
+       * Méthode de test simplifiée
+       */
+      test(duration = 3e3) {
+        this.show();
+        setTimeout(() => this.hide(), duration);
+      }
+    };
+  }
+});
+
 // ClientApp/shared/ChartManager.ts
 var ChartManager;
 var init_ChartManager = __esm({
   "ClientApp/shared/ChartManager.ts"() {
     "use strict";
     init_chart();
+    init_LoaderManager();
     Chart.register(...registerables);
     ChartManager = class {
       constructor(canvasId) {
         this.canvasId = canvasId;
-        this.loader = document.getElementById("app-loader");
       }
       chart = null;
-      loader;
+      loader = LoaderManager.getInstance();
+      /**
+      * Met à jour le graphique avec un délai simulé pour tester le loader
+      * @param data Tableau d'objets { t: string, v: number }
+      */
       update(data) {
-        if (this.loader) this.loader.style.display = "flex";
+        if (!this.loader) return;
+        this.loader.show();
         const labels = data.map((p) => p.t);
         const values = data.map((p) => p.v);
         if (!this.chart) {
-          const ctx = document.getElementById(this.canvasId);
-          if (!ctx) return;
-          this.chart = new Chart(ctx, {
-            type: "line",
-            data: {
-              labels,
-              datasets: [{
-                data: values,
-                borderColor: "#0d6efd",
-                backgroundColor: "rgba(13, 110, 253, 0.05)",
-                fill: true,
-                tension: 0.3,
-                pointRadius: 0
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: { legend: { display: false } },
-              scales: {
-                x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
-                y: { beginAtZero: true }
-              }
-            }
-          });
+          this.createChart(labels, values);
         } else {
           this.chart.data.labels = labels;
           this.chart.data.datasets[0].data = values;
           this.chart.update("none");
         }
-        setTimeout(() => {
-          if (this.loader) this.loader.style.display = "none";
-        }, 150);
+        this.loader.hide();
+      }
+      createChart(labels, values) {
+        const canvas = document.getElementById(this.canvasId);
+        if (!canvas) return;
+        this.chart = new Chart(canvas, {
+          type: "line",
+          data: {
+            labels,
+            datasets: [{
+              data: values,
+              borderColor: "#0d6efd",
+              backgroundColor: "rgba(13, 110, 253, 0.05)",
+              fill: true,
+              tension: 0.3,
+              pointRadius: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
+              y: { beginAtZero: true }
+            }
+          }
+        });
+      }
+      /**
+       * Permet de détruire le graphique proprement si nécessaire (changement de page/vue)
+       */
+      destroy() {
+        if (this.chart) {
+          this.chart.destroy();
+          this.chart = null;
+        }
       }
     };
   }
 });
 
-// ClientApp/time-form/time-form.ts
+// ClientApp/time-form/TimeFormManager.ts
 var TimeFormManager;
-var init_time_form = __esm({
-  "ClientApp/time-form/time-form.ts"() {
+var init_TimeFormManager = __esm({
+  "ClientApp/time-form/TimeFormManager.ts"() {
     "use strict";
     init_ChartManager();
+    init_LoaderManager();
     TimeFormManager = class {
       constructor(container, minLimitStr, maxLimitStr, rangeDays, points) {
         this.container = container;
@@ -14569,6 +14641,68 @@ var init_time_form = __esm({
       minDate;
       maxDate;
       errorTimeout = null;
+      // Accès au Singleton global
+      loader = LoaderManager.getInstance();
+      /**
+       * Applique réellement le filtre et met à jour le graphique avec Loader
+       */
+      update() {
+        if (!this.validate()) return;
+        this.loader.show();
+        setTimeout(() => {
+          const startInput = this.container.querySelector("#input-start");
+          const endInput = this.container.querySelector("#input-end");
+          const display = document.getElementById("display-range");
+          const s = startInput.value;
+          const e = endInput.value;
+          if (display) {
+            const fmt = (val) => {
+              const d = new Date(val);
+              return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+            };
+            display.innerHTML = `${fmt(s)} &nbsp;-&nbsp; ${fmt(e)}`;
+          }
+          const filtered = this.points.filter((p) => p.t >= s && p.t <= e);
+          this.chart.update(filtered);
+          this.loader.hide();
+        }, 50);
+      }
+      setToDefault() {
+        const startInput = this.container.querySelector("#input-start");
+        const endInput = this.container.querySelector("#input-end");
+        if (!startInput || !endInput) return;
+        const dateEnd = new Date(this.maxDate.getTime());
+        const dateStart = new Date(dateEnd.getTime());
+        dateStart.setDate(dateStart.getDate() - this.rangeDays);
+        const finalStart = dateStart < this.minDate ? this.minDate : dateStart;
+        endInput.value = this.toISO(dateEnd);
+        startInput.value = this.toISO(finalStart);
+        this.update();
+      }
+      adjust(isStart, isIncrement) {
+        const input = this.container.querySelector(isStart ? "#input-start" : "#input-end");
+        const stepSel = this.container.querySelector("#stepUnit");
+        if (!input || !input.value) return;
+        const step = parseInt(stepSel?.value || "1");
+        const date = new Date(input.value);
+        if (isNaN(date.getTime())) return;
+        date.setDate(date.getDate() + (isIncrement ? step : -step));
+        if (date < this.minDate) date.setTime(this.minDate.getTime());
+        if (date > this.maxDate) date.setTime(this.maxDate.getTime());
+        input.value = this.toISO(date);
+        this.update();
+      }
+      // --- MÉTHODES PRIVÉES DE VALIDATION ET FORMATAGE (Simplifiées) ---
+      validate() {
+        const startInput = this.container.querySelector("#input-start");
+        const endInput = this.container.querySelector("#input-end");
+        const applyBtn = this.container.querySelector("#btn-apply-filter");
+        if (!startInput || !endInput) return false;
+        const isInvalid = startInput.value > endInput.value;
+        this.toggleErrorBadge(isInvalid);
+        if (applyBtn) applyBtn.disabled = isInvalid;
+        return !isInvalid;
+      }
       parseInputDate(s) {
         if (!s) return /* @__PURE__ */ new Date();
         if (s.includes("/")) {
@@ -14585,53 +14719,6 @@ var init_time_form = __esm({
           return (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
         }
       }
-      /**
-       * Gère uniquement l'aspect visuel (Badge + état du bouton)
-       * Retourne true si les dates sont valides.
-       */
-      validate() {
-        const startInput = this.container.querySelector("#input-start");
-        const endInput = this.container.querySelector("#input-end");
-        const applyBtn = this.container.querySelector("#btn-apply-filter");
-        if (!startInput || !endInput) return false;
-        const isInvalid = startInput.value > endInput.value;
-        console.log(`isInvalid = ${isInvalid}`);
-        this.toggleErrorBadge(isInvalid);
-        if (applyBtn) applyBtn.disabled = isInvalid;
-        return !isInvalid;
-      }
-      /**
-       * Applique réellement le filtre et met à jour le graphique
-       */
-      update() {
-        if (!this.validate()) return;
-        const startInput = this.container.querySelector("#input-start");
-        const endInput = this.container.querySelector("#input-end");
-        const display = document.getElementById("display-range");
-        const s = startInput.value;
-        const e = endInput.value;
-        if (display) {
-          const fmt = (val) => {
-            const d = new Date(val);
-            return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
-          };
-          display.innerHTML = `${fmt(s)} &nbsp;-&nbsp; ${fmt(e)}`;
-        }
-        const filtered = this.points.filter((p) => p.t >= s && p.t <= e);
-        this.chart.update(filtered);
-      }
-      setToDefault() {
-        const startInput = this.container.querySelector("#input-start");
-        const endInput = this.container.querySelector("#input-end");
-        if (!startInput || !endInput) return;
-        const dateEnd = new Date(this.maxDate.getTime());
-        const dateStart = new Date(dateEnd.getTime());
-        dateStart.setDate(dateStart.getDate() - this.rangeDays);
-        const finalStart = dateStart < this.minDate ? this.minDate : dateStart;
-        endInput.value = this.toISO(dateEnd);
-        startInput.value = this.toISO(finalStart);
-        this.update();
-      }
       toggleErrorBadge(show) {
         let badge = this.container.querySelector("#date-error-badge");
         if (this.errorTimeout) {
@@ -14644,7 +14731,7 @@ var init_time_form = __esm({
             badge.id = "date-error-badge";
             badge.className = "badge bg-danger mt-2 d-table mx-auto fw-bold shadow-sm";
             badge.style.padding = "8px 12px";
-            badge.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> La date de fin ne peut \xEAtre inf\xE9rieure \xE0 la date de d\xE9but !';
+            badge.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> La date de fin ne peut \xEAtre inf\xE9rieure \xE0 la date d\xE9but !';
             const grid = this.container.querySelector(".time-inputs-grid");
             grid?.parentNode?.insertBefore(badge, grid.nextSibling);
           }
@@ -14652,24 +14739,9 @@ var init_time_form = __esm({
           this.errorTimeout = window.setTimeout(() => {
             if (badge) badge.style.display = "none";
           }, 3e3);
-        } else {
-          if (badge) {
-            badge.style.setProperty("display", "none", "important");
-          }
+        } else if (badge) {
+          badge.style.setProperty("display", "none", "important");
         }
-      }
-      adjust(isStart, isIncrement) {
-        const input = this.container.querySelector(isStart ? "#input-start" : "#input-end");
-        const stepSel = this.container.querySelector("#stepUnit");
-        if (!input || !input.value) return;
-        const step = parseInt(stepSel?.value || "1");
-        const date = new Date(input.value);
-        if (isNaN(date.getTime())) return;
-        date.setDate(date.getDate() + (isIncrement ? step : -step));
-        if (date < this.minDate) date.setTime(this.minDate.getTime());
-        if (date > this.maxDate) date.setTime(this.maxDate.getTime());
-        input.value = this.toISO(date);
-        this.update();
       }
     };
   }
@@ -14678,7 +14750,7 @@ var init_time_form = __esm({
 // ClientApp/time-form/main.ts
 var require_main = __commonJS({
   "ClientApp/time-form/main.ts"() {
-    init_time_form();
+    init_TimeFormManager();
     document.addEventListener("DOMContentLoaded", () => {
       const app = document.getElementById("time-form-app");
       const partialContainer = document.querySelector(".time-form-container");
