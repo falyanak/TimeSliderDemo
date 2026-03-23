@@ -14562,53 +14562,106 @@ var init_time_form = __esm({
         this.rangeDays = rangeDays;
         this.points = points;
         this.chart = new ChartManager("chart");
-        this.minDate = this.parseSafe(this.minLimitStr);
-        this.maxDate = this.parseSafe(this.maxLimitStr);
+        this.minDate = this.parseInputDate(this.minLimitStr);
+        this.maxDate = this.parseInputDate(this.maxLimitStr);
       }
       chart;
       minDate;
       maxDate;
-      parseSafe(s) {
+      errorTimeout = null;
+      parseInputDate(s) {
+        if (!s) return /* @__PURE__ */ new Date();
+        if (s.includes("/")) {
+          const parts = s.split("/");
+          return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+        }
         const d = new Date(s);
         return isNaN(d.getTime()) ? /* @__PURE__ */ new Date() : d;
       }
       toISO(d) {
-        if (isNaN(d.getTime())) return (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-        return d.toISOString().split("T")[0];
+        try {
+          return d.toISOString().split("T")[0];
+        } catch {
+          return (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+        }
       }
-      setToDefault() {
+      /**
+       * Gère uniquement l'aspect visuel (Badge + état du bouton)
+       * Retourne true si les dates sont valides.
+       */
+      validate() {
         const startInput = this.container.querySelector("#input-start");
         const endInput = this.container.querySelector("#input-end");
-        if (!startInput || !endInput) return;
-        const dateEnd = new Date(this.maxDate.getTime());
-        endInput.value = this.toISO(dateEnd);
-        const dateStart = new Date(dateEnd.getTime());
-        dateStart.setDate(dateStart.getDate() - this.rangeDays);
-        const finalStart = dateStart < this.minDate ? this.minDate : dateStart;
-        startInput.value = this.toISO(finalStart);
-        this.update();
+        const applyBtn = this.container.querySelector("#btn-apply-filter");
+        if (!startInput || !endInput) return false;
+        const isInvalid = startInput.value > endInput.value;
+        console.log(`isInvalid = ${isInvalid}`);
+        this.toggleErrorBadge(isInvalid);
+        if (applyBtn) applyBtn.disabled = isInvalid;
+        return !isInvalid;
       }
+      /**
+       * Applique réellement le filtre et met à jour le graphique
+       */
       update() {
+        if (!this.validate()) return;
         const startInput = this.container.querySelector("#input-start");
         const endInput = this.container.querySelector("#input-end");
         const display = document.getElementById("display-range");
-        if (!startInput || !endInput) return;
         const s = startInput.value;
         const e = endInput.value;
         if (display) {
           const fmt = (val) => {
             const d = new Date(val);
-            return isNaN(d.getTime()) ? val : d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+            return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
           };
           display.innerHTML = `${fmt(s)} &nbsp;-&nbsp; ${fmt(e)}`;
         }
         const filtered = this.points.filter((p) => p.t >= s && p.t <= e);
         this.chart.update(filtered);
       }
+      setToDefault() {
+        const startInput = this.container.querySelector("#input-start");
+        const endInput = this.container.querySelector("#input-end");
+        if (!startInput || !endInput) return;
+        const dateEnd = new Date(this.maxDate.getTime());
+        const dateStart = new Date(dateEnd.getTime());
+        dateStart.setDate(dateStart.getDate() - this.rangeDays);
+        const finalStart = dateStart < this.minDate ? this.minDate : dateStart;
+        endInput.value = this.toISO(dateEnd);
+        startInput.value = this.toISO(finalStart);
+        this.update();
+      }
+      toggleErrorBadge(show) {
+        let badge = this.container.querySelector("#date-error-badge");
+        if (this.errorTimeout) {
+          window.clearTimeout(this.errorTimeout);
+          this.errorTimeout = null;
+        }
+        if (show) {
+          if (!badge) {
+            badge = document.createElement("span");
+            badge.id = "date-error-badge";
+            badge.className = "badge bg-danger mt-2 d-table mx-auto fw-bold shadow-sm";
+            badge.style.padding = "8px 12px";
+            badge.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> La date de fin ne peut \xEAtre inf\xE9rieure \xE0 la date de d\xE9but !';
+            const grid = this.container.querySelector(".time-inputs-grid");
+            grid?.parentNode?.insertBefore(badge, grid.nextSibling);
+          }
+          badge.style.display = "table";
+          this.errorTimeout = window.setTimeout(() => {
+            if (badge) badge.style.display = "none";
+          }, 3e3);
+        } else {
+          if (badge) {
+            badge.style.setProperty("display", "none", "important");
+          }
+        }
+      }
       adjust(isStart, isIncrement) {
         const input = this.container.querySelector(isStart ? "#input-start" : "#input-end");
         const stepSel = this.container.querySelector("#stepUnit");
-        if (!input) return;
+        if (!input || !input.value) return;
         const step = parseInt(stepSel?.value || "1");
         const date = new Date(input.value);
         if (isNaN(date.getTime())) return;
@@ -14638,9 +14691,8 @@ var require_main = __commonJS({
       try {
         points = JSON.parse(pointsRaw);
       } catch (e) {
-        console.error("Erreur lors du parse des points JSON", e);
+        console.error(e);
       }
-      console.log("Configuration extraite :", { minLimit, maxLimit, range, pointsCount: points.length });
       const manager = new TimeFormManager(partialContainer, minLimit, maxLimit, range, points);
       partialContainer.querySelector("#btn-decrement-start")?.addEventListener("click", (e) => {
         e.preventDefault();
@@ -14654,6 +14706,8 @@ var require_main = __commonJS({
         e.preventDefault();
         manager.setToDefault();
       });
+      partialContainer.querySelector("#input-start")?.addEventListener("change", () => manager.validate());
+      partialContainer.querySelector("#input-end")?.addEventListener("change", () => manager.validate());
       partialContainer.querySelector("#btn-apply-filter")?.addEventListener("click", (e) => {
         e.preventDefault();
         manager.update();

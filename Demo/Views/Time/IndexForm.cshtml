@@ -1,4 +1,4 @@
-@model TimeSelectorViewModel
+@model TimeFormViewModel
 
 @{
     ViewData["Title"] = "Analyse Temporelle";
@@ -40,7 +40,7 @@
                 <div class="accordion-body bg-light border-top">
                     @* Interface avec inputs date et boutons +/- *@
                     <div id="form-interface">
-                        <partial name="_TimeSelectorPartial" model="Model" />
+                        <partial name="_TimeFormPartial" model="Model" />
                     </div>
                 </div>
             </div>

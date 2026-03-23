@@ -1,4 +1,4 @@
-@model Demo.Models.TimeSelectorViewModel
+@model Demo.Models.TimeFormViewModel
 
 <div class="time-form-container" data-min-limit="@Model.StartDate" data-range="@Model.RangeDays">
 
@@ -22,23 +22,25 @@
     </div>
 
     <div class="time-inputs-grid shadow-sm">
-        <div class="row g-2 align-items-end">
+        <div class="row g-2 align-items-end justify-content-center">
             <div class="col-6 col-md-3">
                 <label class="label-micro">Début</label>
-                <input type="date" asp-for="StartDate" id="input-start" class="form-control form-control-sm rounded-0" />
+                <input type="date" asp-for="StartDate" id="input-start"
+                       class="form-control form-control-sm rounded-0" />
             </div>
             <div class="col-6 col-md-3">
                 <label class="label-micro">Fin</label>
                 <input type="date" asp-for="EndDate" id="input-end" class="form-control form-control-sm rounded-0" />
             </div>
-            
-            <div class="col-12 col-md-6 mt-2 mt-md-0">
-                <div class="d-flex gap-1">
-                    <button type="button" id="btn-reset" class="btn btn-sm btn-outline-secondary px-3 fw-bold rounded-0">
-                        <i class="bi bi-arrow-counterclockwise"></i> RESET
+
+            <div class="col-12 col-md-auto mt-2 mt-md-0">
+                <div class="d-flex gap-1 justify-content-center">
+                    <button type="button" id="btn-apply-filter" class="btn btn-sm btn-primary fw-bold rounded-0 px-4">
+                        <i class="bi bi-check2-circle me-1"></i>Filtrer
                     </button>
-                    <button type="button" id="btn-apply-filter" class="btn btn-sm btn-primary flex-grow-1 fw-bold rounded-0">
-                        <i class="bi bi-check2-circle me-1"></i>APPLIQUER
+                    <button type="button" id="btn-reset"
+                            class="btn btn-sm btn-outline-secondary px-3 fw-bold rounded-0">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset
                     </button>
                 </div>
             </div>
