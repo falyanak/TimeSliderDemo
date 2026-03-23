@@ -22,7 +22,7 @@ public class TimeController : Controller
             });
         }
 
-        return View("IndexForm", new TimeSelectorViewModel
+        return View("IndexForm", new TimeFormViewModel
         {
             StartDate = start.ToString("yyyy-MM-dd"),
             EndDate = end.ToString("yyyy-MM-dd"),
