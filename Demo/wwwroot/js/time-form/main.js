@@ -14501,47 +14501,48 @@ var init_ChartManager = __esm({
     ChartManager = class {
       constructor(canvasId) {
         this.canvasId = canvasId;
+        this.loader = document.getElementById("app-loader");
       }
       chart = null;
+      loader;
       update(data) {
-        const ctx = document.getElementById(this.canvasId);
-        if (!ctx || !data) return;
-        console.log("Donn\xE9es re\xE7ues par le manager :", data[0]);
-        const labels = data.map((d) => d.t);
-        const values = data.map((d) => d.v);
-        if (this.chart) {
-          this.chart.data.labels = labels;
-          this.chart.data.datasets[0].data = values;
-          this.chart.update();
-        } else {
+        if (this.loader) this.loader.style.display = "flex";
+        const labels = data.map((p) => p.t);
+        const values = data.map((p) => p.v);
+        if (!this.chart) {
+          const ctx = document.getElementById(this.canvasId);
+          if (!ctx) return;
           this.chart = new Chart(ctx, {
             type: "line",
             data: {
               labels,
               datasets: [{
-                label: "Analyse",
                 data: values,
-                borderColor: "#2563eb",
-                backgroundColor: "rgba(37, 99, 235, 0.1)",
+                borderColor: "#0d6efd",
+                backgroundColor: "rgba(13, 110, 253, 0.05)",
                 fill: true,
                 tension: 0.3,
                 pointRadius: 0
-                // Évite de surcharger si 1800 points
               }]
             },
             options: {
               responsive: true,
               maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
               scales: {
-                x: { display: true },
-                y: { beginAtZero: false }
-                // Mieux pour des variations boursières/temporelles
+                x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
+                y: { beginAtZero: true }
               }
             }
           });
+        } else {
+          this.chart.data.labels = labels;
+          this.chart.data.datasets[0].data = values;
+          this.chart.update("none");
         }
-        const loader = document.getElementById("app-loader");
-        if (loader) loader.style.display = "none";
+        setTimeout(() => {
+          if (this.loader) this.loader.style.display = "none";
+        }, 150);
       }
     };
   }
@@ -14572,6 +14573,7 @@ var init_time_form = __esm({
         return isNaN(d.getTime()) ? /* @__PURE__ */ new Date() : d;
       }
       toISO(d) {
+        if (isNaN(d.getTime())) return (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
         return d.toISOString().split("T")[0];
       }
       setToDefault() {
@@ -14594,7 +14596,10 @@ var init_time_form = __esm({
         const s = startInput.value;
         const e = endInput.value;
         if (display) {
-          const fmt = (val) => new Date(val).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+          const fmt = (val) => {
+            const d = new Date(val);
+            return isNaN(d.getTime()) ? val : d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+          };
           display.innerHTML = `${fmt(s)} &nbsp;-&nbsp; ${fmt(e)}`;
         }
         const filtered = this.points.filter((p) => p.t >= s && p.t <= e);
@@ -14628,8 +14633,14 @@ var require_main = __commonJS({
       const minLimit = partialContainer.getAttribute("data-min-limit") || "";
       const maxLimit = app.getAttribute("data-end") || "";
       const range = parseInt(partialContainer.getAttribute("data-range") || "60");
-      const points = JSON.parse(app.getAttribute("data-points") || "[]");
-      console.log("Init Form:", { minLimit, maxLimit, range });
+      const pointsRaw = app.getAttribute("data-points") || "[]";
+      let points = [];
+      try {
+        points = JSON.parse(pointsRaw);
+      } catch (e) {
+        console.error("Erreur lors du parse des points JSON", e);
+      }
+      console.log("Configuration extraite :", { minLimit, maxLimit, range, pointsCount: points.length });
       const manager = new TimeFormManager(partialContainer, minLimit, maxLimit, range, points);
       partialContainer.querySelector("#btn-decrement-start")?.addEventListener("click", (e) => {
         e.preventDefault();

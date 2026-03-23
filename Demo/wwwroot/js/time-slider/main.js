@@ -16371,47 +16371,48 @@ var init_ChartManager = __esm({
     ChartManager = class {
       constructor(canvasId) {
         this.canvasId = canvasId;
+        this.loader = document.getElementById("app-loader");
       }
       chart = null;
+      loader;
       update(data) {
-        const ctx = document.getElementById(this.canvasId);
-        if (!ctx || !data) return;
-        console.log("Donn\xE9es re\xE7ues par le manager :", data[0]);
-        const labels = data.map((d) => d.t);
-        const values = data.map((d) => d.v);
-        if (this.chart) {
-          this.chart.data.labels = labels;
-          this.chart.data.datasets[0].data = values;
-          this.chart.update();
-        } else {
+        if (this.loader) this.loader.style.display = "flex";
+        const labels = data.map((p) => p.t);
+        const values = data.map((p) => p.v);
+        if (!this.chart) {
+          const ctx = document.getElementById(this.canvasId);
+          if (!ctx) return;
           this.chart = new Chart(ctx, {
             type: "line",
             data: {
               labels,
               datasets: [{
-                label: "Analyse",
                 data: values,
-                borderColor: "#2563eb",
-                backgroundColor: "rgba(37, 99, 235, 0.1)",
+                borderColor: "#0d6efd",
+                backgroundColor: "rgba(13, 110, 253, 0.05)",
                 fill: true,
                 tension: 0.3,
                 pointRadius: 0
-                // Évite de surcharger si 1800 points
               }]
             },
             options: {
               responsive: true,
               maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
               scales: {
-                x: { display: true },
-                y: { beginAtZero: false }
-                // Mieux pour des variations boursières/temporelles
+                x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
+                y: { beginAtZero: true }
               }
             }
           });
+        } else {
+          this.chart.data.labels = labels;
+          this.chart.data.datasets[0].data = values;
+          this.chart.update("none");
         }
-        const loader = document.getElementById("app-loader");
-        if (loader) loader.style.display = "none";
+        setTimeout(() => {
+          if (this.loader) this.loader.style.display = "none";
+        }, 150);
       }
     };
   }

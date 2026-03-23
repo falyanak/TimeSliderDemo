@@ -1,24 +1,33 @@
 import { TimeFormManager } from './time-form';
 
 document.addEventListener('DOMContentLoaded', () => {
-    const app = document.getElementById('time-form-app'); // Le conteneur racine de la page
+    // 1. On cible le conteneur racine (qui porte les data-points)
+    const app = document.getElementById('time-form-app');
+    // 2. On cible le conteneur de la partielle (qui porte data-min-limit)
     const partialContainer = document.querySelector('.time-form-container') as HTMLElement;
     
     if (!app || !partialContainer) return;
 
-    // 1. Extraction des attributs (Noms exacts de ta vue partielle et du parent)
+    // Extraction rigoureuse des attributs
     const minLimit = partialContainer.getAttribute('data-min-limit') || ""; 
-    const maxLimit = app.getAttribute('data-end') || ""; // On prend la fin max autorisée sur le parent
+    const maxLimit = app.getAttribute('data-end') || ""; 
     const range = parseInt(partialContainer.getAttribute('data-range') || "60");
-    const points = JSON.parse(app.getAttribute('data-points') || "[]");
+    const pointsRaw = app.getAttribute('data-points') || "[]";
 
-    // Debug pour vérifier les formats reçus
-    console.log("Init Form:", { minLimit, maxLimit, range });
+    let points = [];
+    try {
+        points = JSON.parse(pointsRaw);
+    } catch (e) {
+        console.error("Erreur lors du parse des points JSON", e);
+    }
 
-    // 2. Initialisation du Manager
+    // Debug Console pour vérifier que rien n'est "undefined"
+    console.log("Configuration extraite :", { minLimit, maxLimit, range, pointsCount: points.length });
+
+    // Initialisation
     const manager = new TimeFormManager(partialContainer, minLimit, maxLimit, range, points);
 
-    // 3. Branchement des événements
+    // Branchement des événements (Scoped à partialContainer)
     partialContainer.querySelector('#btn-decrement-start')?.addEventListener('click', (e) => {
         e.preventDefault();
         manager.adjust(true, false);
@@ -39,6 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
         manager.update();
     });
 
-    // 4. Lancement initial
+    // Lancement initial
     manager.setToDefault();
 });
