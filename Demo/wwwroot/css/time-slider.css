@@ -1,6 +1,10 @@
 /* ==========================================================================
    TIME SLIDER COMPONENT (noUiSlider Customization)
    ========================================================================== */
+:root {
+    /* Change cette valeur pour modifier tous les éléments liés au slider */
+    --slider-color: #fbc209 !important; /* Un vert émeraude par exemple */
+}
 
 .sliders-wrapper {
     background-color: #ffffff;
@@ -61,7 +65,7 @@
 }
 
 .noUi-connect {
-    background: #0d6efd !important;
+    background: var(--slider-color) !important;
 }
 
 /* --- noUiSlider : Poignées --- */

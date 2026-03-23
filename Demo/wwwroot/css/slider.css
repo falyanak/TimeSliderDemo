@@ -1,4 +1,7 @@
-/* --- Structure et Zone de Sécurité --- */
+:root {
+    /* Change cette valeur pour modifier tous les éléments liés au slider */
+    --slider-color: #fbc209 !important; /* Un vert émeraude par exemple */
+}
 
 .chart-container {
     position: relative;
@@ -116,7 +119,7 @@
 /* --- Couleur de connexion (Barre entre les poignées) --- */
 
 .noUi-connect {
-    background: #2563eb;
+    background: var(--slider-color);
 }
 
 /* --- Ajustements Responsifs --- */
